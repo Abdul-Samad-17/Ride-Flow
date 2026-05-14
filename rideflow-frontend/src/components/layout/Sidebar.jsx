@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Home, Car, Map, Wallet, User, BarChart3, Users, Settings, LogOut, Zap, Shield, X } from 'lucide-react';
 import useAuthStore from '../../store/authStore';
-import api from '../../services/api';
+import { api } from '../../services/api';
 
 const NAV_ITEMS = {
   Rider: [
