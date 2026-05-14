@@ -63,13 +63,17 @@ export default function Sidebar({ isOpen, onClose }) {
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
         style={{
-          minHeight: '100vh', flexShrink: 0,
-          background: 'rgba(10, 10, 15, 0.95)',
+          minHeight: '100vh', 
+          flexShrink: 0,
+          background: 'rgba(10, 10, 15, 1)', // Made solid to prevent overlapping artifacts
           backdropFilter: 'blur(20px)',
           borderRight: '1px solid rgba(255,255,255,0.06)',
-          display: 'flex', flexDirection: 'column',
+          display: 'flex', 
+          flexDirection: 'column',
           padding: '24px 16px',
-          height: '100vh', overflowY: 'auto',
+          height: '100vh', 
+          overflowY: 'auto',
+          zIndex: 100, // Explicitly high
         }}
       >
         {/* Logo */}
