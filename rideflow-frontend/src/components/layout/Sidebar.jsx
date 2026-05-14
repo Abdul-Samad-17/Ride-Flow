@@ -138,6 +138,7 @@ export default function Sidebar({ isOpen, onClose }) {
         <LogOut size={18} />
         Sign Out
       </button>
-    </aside>
+      </aside>
+    </>
   );
 }
