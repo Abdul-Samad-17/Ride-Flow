@@ -71,7 +71,7 @@ export default function RiderDashboard() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-7xl mx-auto">
+      <div className="w-full">
         <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-12">
           <div>
             <h1 className="text-3xl md:text-4xl font-bold mb-2">Hello, {user?.full_name?.split(' ')[0]}</h1>

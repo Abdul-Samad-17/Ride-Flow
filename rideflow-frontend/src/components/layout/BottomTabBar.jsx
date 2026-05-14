@@ -1,33 +1,32 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Car, Map, Wallet, User, BarChart3, Users, Shield, Settings, LayoutDashboard } from 'lucide-react';
+import { Home, Car, Map, Wallet, User, BarChart3, Users, Shield, Settings, LayoutDashboard, Navigation, CreditCard } from 'lucide-react';
 import useAuthStore from '../../store/authStore';
 
 const TABS = {
   Rider: [
-    { icon: Home,    label: 'Home',    path: '/dashboard/rider' },
     { icon: Car,     label: 'Book',    path: '/dashboard/rider/book' },
-    { icon: Map,     label: 'Rides',   path: '/dashboard/rider/rides' },
+    { icon: Map,     label: 'History', path: '/dashboard/rider/rides' },
     { icon: Wallet,  label: 'Wallet',  path: '/dashboard/rider/wallet' },
     { icon: User,    label: 'Profile', path: '/dashboard/rider/profile' },
   ],
   Driver: [
-    { icon: Home,    label: 'Home',     path: '/dashboard/driver' },
-    { icon: Car,     label: 'Ride',     path: '/dashboard/driver/active' },
-    { icon: Map,     label: 'Trips',    path: '/dashboard/driver/trips' },
+    { icon: Home,    label: 'Overview', path: '/dashboard/driver/overview' },
+    { icon: Navigation, label: 'Ride',     path: '/dashboard/driver/rides' },
     { icon: Wallet,  label: 'Earnings', path: '/dashboard/driver/earnings' },
     { icon: User,    label: 'Profile',  path: '/dashboard/driver/profile' },
   ],
   Admin: [
-    { icon: LayoutDashboard, label: 'Overview', path: '/dashboard/admin' },
-    { icon: Users,           label: 'Users',    path: '/dashboard/admin/users' },
-    { icon: Car,             label: 'Rides',    path: '/dashboard/admin/rides' },
-    { icon: BarChart3,       label: 'Reports',  path: '/dashboard/admin/reports' },
-    { icon: Shield,          label: 'More',     path: '/dashboard/admin/vehicles' }, // 'More' points to vehicles as a catch-all
+    { icon: BarChart3, label: 'Analytics', path: '/dashboard/admin/analytics' },
+    { icon: Users,     label: 'Users',     path: '/dashboard/admin/users' },
+    { icon: Shield,    label: 'Verify',    path: '/dashboard/admin/verification' },
+    { icon: CreditCard,label: 'Payouts',   path: '/dashboard/admin/payouts' },
+    { icon: BarChart3, label: 'Reports',   path: '/dashboard/admin/reports' },
   ],
 };
 
 export default function BottomTabBar() {
-  const { role } = useAuthStore();
+  const user = useAuthStore(state => state.state?.user || state.user);
+  const role = user?.role;
   const { pathname } = useLocation();
   const tabs = TABS[role] || [];
 

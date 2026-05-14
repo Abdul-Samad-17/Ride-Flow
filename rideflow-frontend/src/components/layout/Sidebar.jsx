@@ -1,39 +1,40 @@
 // src/components/layout/Sidebar.jsx
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Home, Car, Map, Wallet, User, BarChart3, Users, Settings, LogOut, Zap, Shield, X } from 'lucide-react';
+import { 
+  Home, Car, Map, Wallet, User, BarChart3, Users, Settings, 
+  LogOut, Zap, Shield, X, History, Navigation, DollarSign, 
+  CreditCard, FileText, TrendingUp 
+} from 'lucide-react';
 import useAuthStore from '../../store/authStore';
 import { api } from '../../services/api';
 
 const NAV_ITEMS = {
   Rider: [
-    { icon: Home,    label: 'Home',      path: '/dashboard/rider' },
-    { icon: Car,     label: 'Book a Ride', path: '/dashboard/rider/book' },
-    { icon: Map,     label: 'My Rides',  path: '/dashboard/rider/rides' },
-    { icon: Wallet,  label: 'Wallet',    path: '/dashboard/rider/wallet' },
-    { icon: User,    label: 'Profile',   path: '/dashboard/rider/profile' },
+    { icon: Home,    label: 'Book a Ride', path: '/dashboard/rider/book' },
+    { icon: Map,     label: 'Ride History', path: '/dashboard/rider/rides' },
+    { icon: Wallet,  label: 'My Wallet',    path: '/dashboard/rider/wallet' },
+    { icon: User,    label: 'Profile',      path: '/dashboard/rider/profile' },
   ],
   Driver: [
-    { icon: Home,    label: 'Home',        path: '/dashboard/driver' },
-    { icon: Car,     label: 'Active Ride', path: '/dashboard/driver/active' },
-    { icon: Map,     label: 'My Trips',    path: '/dashboard/driver/trips' },
-    { icon: Wallet,  label: 'Earnings',    path: '/dashboard/driver/earnings' },
-    { icon: User,    label: 'Profile',     path: '/dashboard/driver/profile' },
+    { icon: Home,    label: 'Overview',     path: '/dashboard/driver/overview' },
+    { icon: Car,     label: 'Active Ride',  path: '/dashboard/driver/rides' },
+    { icon: Wallet,  label: 'Earnings',     path: '/dashboard/driver/earnings' },
+    { icon: User,    label: 'My Profile',   path: '/dashboard/driver/profile' },
   ],
   Admin: [
-    { icon: BarChart3, label: 'Overview',    path: '/dashboard/admin' },
-    { icon: Users,     label: 'Users',       path: '/dashboard/admin/users' },
-    { icon: Car,       label: 'Vehicles',    path: '/dashboard/admin/vehicles' },
-    { icon: Map,       label: 'Rides',       path: '/dashboard/admin/rides' },
-    { icon: Wallet,    label: 'Payments',    path: '/dashboard/admin/payments' },
-    { icon: Shield,    label: 'Promos',      path: '/dashboard/admin/promos' },
-    { icon: BarChart3, label: 'Reports',     path: '/dashboard/admin/reports' },
-    { icon: Settings,  label: 'Admin Logs',  path: '/dashboard/admin/logs' },
+    { icon: BarChart3, label: 'Analytics',    path: '/dashboard/admin/analytics' },
+    { icon: Users,     label: 'Users',        path: '/dashboard/admin/users' },
+    { icon: Car,       label: 'Verification', path: '/dashboard/admin/verification' },
+    { icon: Shield,    label: 'Fares',        path: '/dashboard/admin/fares' },
+    { icon: Wallet,    label: 'Payouts',      path: '/dashboard/admin/payouts' },
+    { icon: BarChart3, label: 'Reports',      path: '/dashboard/admin/reports' },
   ],
 };
 
 export default function Sidebar({ isOpen, onClose }) {
-  const { user, role, clearAuth } = useAuthStore();
+  const { user, clearAuth } = useAuthStore();
+  const role = user?.role;
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const items = NAV_ITEMS[role] || [];
@@ -140,7 +141,7 @@ export default function Sidebar({ isOpen, onClose }) {
         onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.12)'}
         onMouseLeave={e => e.currentTarget.style.background = 'rgba(239,68,68,0.06)'}>
         <LogOut size={18} />
-        Sign Out
+        Logout
       </button>
       </aside>
     </>

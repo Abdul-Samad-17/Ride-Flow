@@ -171,7 +171,7 @@ export default function Landing() {
       <section className="py-24 md:py-48 bg-white/[0.005]" style={{ borderTop: '1px solid rgba(255,255,255,0.02)' }}>
         <div className="container">
           {/* Section 1 */}
-          <div className="grid grid-cols-1 md:grid-cols-[1fr,1.5fr] gap-12 md:gap-32 items-center mb-32 md:mb-60">
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_1.5fr] gap-12 md:gap-32 items-center mb-32 md:mb-60">
             <motion.div {...fadeUp(0.3)} className="order-1 md:order-2 h-[400px] md:h-[600px] overflow-hidden border border-white/5">
               <img src="https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=1200&q=80" alt="Safety" className="w-full h-full object-cover opacity-60" />
             </motion.div>
@@ -187,7 +187,7 @@ export default function Landing() {
           </div>
 
           {/* Section 2 */}
-          <div className="grid grid-cols-1 md:grid-cols-[1.5fr,1fr] gap-12 md:gap-32 items-center">
+          <div className="grid grid-cols-1 md:grid-cols-[1.5fr_1fr] gap-12 md:gap-32 items-center">
             <motion.div {...fadeUp(0.1)} className="h-[400px] md:h-[600px] overflow-hidden border border-white/5">
               <img src="https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=1200&q=80" alt="Exclusivity" className="w-full h-full object-cover opacity-80" />
             </motion.div>
@@ -213,7 +213,7 @@ export default function Landing() {
       {/* ── FOOTER ──────────────────────────────────────────────── */}
       <footer className="pt-24 md:pt-40 pb-12 md:pb-20" style={{ borderTop: '1px solid rgba(255,255,255,0.03)' }}>
         <div className="container">
-          <div className="grid grid-cols-1 md:grid-cols-[2.5fr,1fr,1fr,1fr] gap-12 md:gap-32 mb-20 md:mb-40">
+          <div className="grid grid-cols-1 md:grid-cols-[2.5fr_1fr_1fr_1fr] gap-12 md:gap-32 mb-20 md:mb-40">
             <div className="text-center md:text-left">
               <h2 className="text-3xl md:text-4xl text-[#F0EDE8] font-extrabold mb-8 md:mb-10 tracking-widest">RIDEFLOW</h2>
               <p className="mx-auto md:mx-0 text-[var(--text-muted)] text-[16px] leading-[2.1] max-w-[400px]">Setting the gold standard for premium executive transport. Precision. Privacy. Performance.</p>
@@ -226,7 +226,7 @@ export default function Landing() {
               { title: 'SUPPORT', links: ['Help Center', 'Privacy', 'Contact'] }
             ].map((col, i) => (
               <div key={i} className="border-b border-white/5 md:border-none pb-6 md:pb-0">
-                <h4 className="text-[12px] md:text-[14px] mb-6 md:mb-10 tracking-[0.2em] font-bold text-[var(--text-primary)] cursor-pointer md:cursor-default flex justify-between items-center">
+                <h4 className="text-sm md:text-base mb-6 md:mb-10 tracking-[0.2em] font-bold text-[var(--text-primary)] cursor-pointer md:cursor-default flex justify-between items-center">
                   {col.title}
                   <span className="md:hidden"><ChevronRight size={16} /></span>
                 </h4>
