@@ -78,8 +78,8 @@ export default function AdminDashboard() {
 
   return (
     <DashboardLayout>
-      <div className="w-full">
-        <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-12">
+      <div className="w-full pb-24">
+        <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-20">
           <div>
             <h1 className="text-3xl md:text-4xl font-bold mb-2">System Admin</h1>
             <p className="text-[var(--text-muted)] text-sm md:text-base">
@@ -137,8 +137,8 @@ function AnalyticsTab({ stats }) {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-8">
-        <GlassCard level={2} className="p-10 min-h-[400px]">
+      <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-10">
+        <GlassCard level={2} className="p-10 min-h-[500px]">
           <h3 className="text-xl font-bold mb-8">Network Activity</h3>
           <div className="flex-1 min-h-[300px] flex items-center justify-center bg-white/5 rounded-3xl border border-dashed border-white/10">
             <p className="text-[var(--text-muted)] text-sm">Heatmap Visualization Stream Active</p>
@@ -391,7 +391,7 @@ function UsersTab({ users, onAction }) {
       </div>
 
       <div className="hidden lg:block">
-        <GlassCard level={2} className="overflow-hidden">
+        <GlassCard level={2} className="overflow-hidden min-h-[600px]">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-white/5 border-b border-white/5">
@@ -629,7 +629,7 @@ function VerificationTab({ queue, onAction }) {
 
   return (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
-      <GlassCard level={2} className="p-8 md:p-12">
+      <GlassCard level={2} className="p-8 md:p-12 min-h-[600px]">
         <h3 className="text-2xl font-bold mb-10">Vehicle Verification Queue</h3>
         <div className="flex flex-col gap-4">
           {queue.map(v => (

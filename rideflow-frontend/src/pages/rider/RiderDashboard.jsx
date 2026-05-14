@@ -71,8 +71,8 @@ export default function RiderDashboard() {
 
   return (
     <DashboardLayout>
-      <div className="w-full">
-        <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-12">
+      <div className="w-full pb-24">
+        <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-20">
           <div>
             <h1 className="text-3xl md:text-4xl font-bold mb-2">Hello, {user?.full_name?.split(' ')[0]}</h1>
             <p className="text-[var(--text-muted)] text-sm md:text-base">
@@ -171,8 +171,8 @@ function BookRideTab({ activeRide, onBookingSuccess }) {
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-      <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-8">
-        <GlassCard level={2} className="p-6 md:p-10">
+      <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-10 items-start">
+        <GlassCard level={2} className="p-6 md:p-12 min-h-[600px] flex flex-col">
           <div className="flex items-center gap-4 mb-8">
             <div className="w-12 h-12 rounded-xl bg-amber-ghost flex items-center justify-center text-[var(--amber-core)]">
               <Navigation size={24} />
@@ -297,7 +297,7 @@ function RideHistoryTab({ history, loading, onRefresh }) {
 
   return (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
-      <GlassCard level={2} className="p-6 md:p-10">
+      <GlassCard level={2} className="p-6 md:p-12 min-h-[600px]">
         <h3 className="text-2xl font-bold mb-8">Recent Journeys</h3>
         {loading ? <div className="py-20 text-center"><Spinner /></div> : (
           <div className="flex flex-col gap-4">

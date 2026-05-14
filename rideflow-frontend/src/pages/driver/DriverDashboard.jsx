@@ -108,8 +108,8 @@ export default function DriverDashboard() {
 
   return (
     <DashboardLayout>
-      <div className="w-full">
-        <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-12">
+      <div className="w-full pb-24">
+        <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-20">
           <div>
             <h1 className="text-3xl md:text-4xl font-bold mb-2">Driver Hub</h1>
             <p className="text-[var(--text-muted)] text-sm md:text-base">
@@ -147,8 +147,8 @@ export default function DriverDashboard() {
 
 function OverviewTab({ stats, isActive, activeRide, onNavigate }) {
   return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="pb-12">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
         <GlassCard level={1} className="p-8">
           <p className="label-caps text-[10px] mb-4">Today's Earnings</p>
           <div className="flex items-baseline gap-2">
@@ -247,9 +247,9 @@ function EarningsTab() {
   if (loading && history.length === 0) return <div className="py-32 text-center"><Spinner /></div>;
 
   return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-      <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-8">
-        <GlassCard level={2} className="p-6 md:p-10">
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="pb-12">
+      <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-10">
+        <GlassCard level={2} className="p-6 md:p-12 min-h-[600px]">
           <h3 className="text-xl font-bold mb-8 flex items-center gap-3">
             <History size={20} className="text-[var(--amber-core)]" /> Ride Analysis
           </h3>

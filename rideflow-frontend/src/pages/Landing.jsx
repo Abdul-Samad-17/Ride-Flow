@@ -41,7 +41,7 @@ export default function Landing() {
       <Navbar />
 
       {/* ── HERO SECTION ────────────────────────────────────────── */}
-      <section className="relative min-h-[100svh] md:h-screen flex items-center pt-32 md:pt-0 overflow-hidden">
+      <section className="relative min-h-[100svh] md:h-screen flex items-center pt-40 md:pt-20 overflow-hidden">
         <div className="hidden md:block absolute inset-0">
           <HeroCarScene />
         </div>
@@ -81,7 +81,7 @@ export default function Landing() {
       </section>
 
       {/* ── THE RIDEFLOW METHOD ─────────────────────────────────── */}
-      <section className="py-24 md:py-48" style={{ borderTop: '1px solid rgba(255,255,255,0.02)' }}>
+      <section className="py-32 md:py-60" style={{ borderTop: '1px solid rgba(255,255,255,0.02)' }}>
         <div className="container">
           <div style={{ textAlign: 'center', marginBottom: '80px' }}>
             <h2 className="text-display" style={{ letterSpacing: '0.4em', marginBottom: '24px' }}>THE RIDEFLOW METHOD</h2>
@@ -108,7 +108,7 @@ export default function Landing() {
       </section>
 
       {/* ── CURATED FLEET ───────────────────────────────────────── */}
-      <section id="fleet" className="pb-24 md:pb-48">
+      <section id="fleet" className="pb-32 md:pb-60">
         <div className="container">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-8 mb-16 md:mb-32">
             <div>
@@ -168,7 +168,7 @@ export default function Landing() {
       </section>
 
       {/* ── SAFETY & EXCLUSIVITY ────────────────────────────────── */}
-      <section className="py-24 md:py-48 bg-white/[0.005]" style={{ borderTop: '1px solid rgba(255,255,255,0.02)' }}>
+      <section className="py-32 md:py-60 bg-white/[0.005]" style={{ borderTop: '1px solid rgba(255,255,255,0.02)' }}>
         <div className="container">
           {/* Section 1 */}
           <div className="grid grid-cols-1 md:grid-cols-[1fr_1.5fr] gap-12 md:gap-32 items-center mb-32 md:mb-60">
