@@ -71,8 +71,8 @@ export default function RiderDashboard() {
 
   return (
     <DashboardLayout>
-      <div className="w-full pb-24">
-        <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-20">
+      <div className="w-full">
+        <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 md:gap-6 mb-8">
           <div>
             <h1 className="text-3xl md:text-4xl font-bold mb-2">Hello, {user?.full_name?.split(' ')[0]}</h1>
             <p className="text-[var(--text-muted)] text-sm md:text-base">
@@ -171,8 +171,9 @@ function BookRideTab({ activeRide, onBookingSuccess }) {
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-      <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-10 items-start">
-        <GlassCard level={2} className="p-6 md:p-12 min-h-[600px] flex flex-col">
+      <div className="flex flex-col lg:flex-row gap-6">
+        <div className="w-full lg:w-[420px] flex-shrink-0">
+        <GlassCard level={2} className="p-5 md:p-8">
           <div className="flex items-center gap-4 mb-8">
             <div className="w-12 h-12 rounded-xl bg-amber-ghost flex items-center justify-center text-[var(--amber-core)]">
               <Navigation size={24} />
@@ -266,8 +267,9 @@ function BookRideTab({ activeRide, onBookingSuccess }) {
             </Button>
           </div>
         </GlassCard>
+        </div>
 
-        <div className="h-[300px] lg:h-auto min-h-[400px] rounded-[32px] overflow-hidden border border-white/5 relative">
+        <div className="flex-1 min-h-[250px] lg:min-h-[500px] rounded-2xl overflow-hidden border border-white/5 relative">
           {selectingMapField && (
             <div className="absolute top-4 left-4 right-4 z-10 bg-[var(--amber-core)] text-[#050508] px-4 py-2 rounded-xl text-xs font-bold text-center shadow-xl animate-bounce">
               Tap on map to set {selectingMapField}
@@ -297,7 +299,7 @@ function RideHistoryTab({ history, loading, onRefresh }) {
 
   return (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
-      <GlassCard level={2} className="p-6 md:p-12 min-h-[600px]">
+      <GlassCard level={2} className="p-5 md:p-8">
         <h3 className="text-2xl font-bold mb-8">Recent Journeys</h3>
         {loading ? <div className="py-20 text-center"><Spinner /></div> : (
           <div className="flex flex-col gap-4">

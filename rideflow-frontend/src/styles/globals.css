@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Orbitron:wght@600;700;900&display=swap');
+
 @import "tailwindcss";
 
 @theme {
@@ -6,8 +8,6 @@
   --color-amber-ghost: rgba(245, 166, 35, 0.08);
   --color-amber-glow: rgba(245, 166, 35, 0.3);
 }
-
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Orbitron:wght@600;700;900&display=swap');
 
 :root {
   /* BACKGROUNDS */
@@ -52,6 +52,17 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+}
+
+html, body, #root {
+  width: 100%;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+section {
+  position: relative;
+  width: 100%;
 }
 
 body {
