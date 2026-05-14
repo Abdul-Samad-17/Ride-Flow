@@ -71,32 +71,30 @@ export default function RiderDashboard() {
 
   return (
     <DashboardLayout>
-      <div className="w-full">
-        <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 md:gap-6 mb-8">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-bold mb-2">Hello, {user?.full_name?.split(' ')[0]}</h1>
-            <p className="text-[var(--text-muted)] text-sm md:text-base">
-              {activeRide ? 'Your journey is in progress' : 'Ready for your next premium journey?'}
-            </p>
+      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+        <div>
+          <h1 className="text-3xl md:text-4xl font-bold mb-2">Hello, {user?.full_name?.split(' ')[0]}</h1>
+          <p className="text-[var(--text-muted)] text-sm">
+            {activeRide ? 'Your journey is in progress' : 'Ready for your next premium journey?'}
+          </p>
+        </div>
+        <div className="flex w-full sm:w-auto gap-3 items-center">
+          <div className="glass-1 flex-1 sm:flex-initial px-5 py-3 rounded-2xl flex items-center gap-3 border border-white/5">
+            <Wallet size={18} className="text-[var(--amber-core)]" />
+            <span className="font-mono font-bold">PKR {Number(balance || 0).toFixed(2)}</span>
           </div>
-          <div className="flex w-full sm:w-auto gap-4 items-center">
-            <div className="glass-1 flex-1 sm:flex-initial px-6 py-3 rounded-2xl flex items-center gap-4 border border-white/5">
-              <Wallet size={18} className="text-[var(--amber-core)]" />
-              <span className="font-mono font-bold text-lg">PKR {Number(balance || 0).toFixed(2)}</span>
-            </div>
-            <button className="w-12 h-12 rounded-2xl bg-white/5 border border-white/5 text-[var(--text-primary)] flex items-center justify-center hover:bg-white/10 transition-colors">
-              <Bell size={22} />
-            </button>
-          </div>
-        </header>
+          <button className="w-11 h-11 rounded-2xl bg-white/5 border border-white/5 text-[var(--text-primary)] flex items-center justify-center hover:bg-white/10 transition-colors">
+            <Bell size={20} />
+          </button>
+        </div>
+      </header>
 
-        <AnimatePresence mode="wait">
-          {activeTab === 'book' && <BookRideTab key="book" activeRide={activeRide} onBookingSuccess={fetchStats} />}
-          {activeTab === 'history' && <RideHistoryTab key="history" history={rideHistory} loading={rideLoading} onRefresh={fetchHistory} />}
-          {activeTab === 'wallet' && <WalletTab key="wallet" balance={balance} onRefresh={fetchStats} />}
-          {activeTab === 'settings' && <AccountTab key="settings" user={user} />}
-        </AnimatePresence>
-      </div>
+      <AnimatePresence mode="wait">
+        {activeTab === 'book' && <BookRideTab key="book" activeRide={activeRide} onBookingSuccess={fetchStats} />}
+        {activeTab === 'history' && <RideHistoryTab key="history" history={rideHistory} loading={rideLoading} onRefresh={fetchHistory} />}
+        {activeTab === 'wallet' && <WalletTab key="wallet" balance={balance} onRefresh={fetchStats} />}
+        {activeTab === 'settings' && <AccountTab key="settings" user={user} />}
+      </AnimatePresence>
     </DashboardLayout>
   );
 }

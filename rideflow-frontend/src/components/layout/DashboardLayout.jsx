@@ -8,45 +8,95 @@ export default function DashboardLayout({ children }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen w-full" style={{ background: 'radial-gradient(circle at top right, rgba(245,166,35,0.03), transparent 40%), var(--bg-void)', position: 'relative' }}>
+    <div
+      style={{
+        display: 'flex',
+        minHeight: '100vh',
+        width: '100%',
+        background: 'var(--bg-void)',
+        position: 'relative',
+        overflow: 'hidden',
+      }}
+    >
       <AmbientOrbs />
 
-      {/* Mobile Header — only visible below lg */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 h-16 z-30 flex items-center px-5 justify-between"
-        style={{ background: 'rgba(5,5,8,0.92)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-        <span style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', fontWeight: 700, color: 'var(--amber-core)', letterSpacing: '0.08em' }}>
-          RIDEFLOW
-        </span>
-        <button
-          onClick={() => setIsSidebarOpen(true)}
-          style={{ color: 'var(--amber-core)', background: 'transparent', border: 'none', cursor: 'pointer', padding: '8px' }}
-        >
-          <Menu size={24} />
-        </button>
-      </div>
-
-      {/* Sidebar — hidden on mobile (drawer), always visible on lg+ */}
-      <div className="hidden lg:block lg:flex-shrink-0" style={{ width: '260px' }}>
-        <div style={{ position: 'sticky', top: 0, height: '100vh' }}>
-          <Sidebar isOpen={false} onClose={() => {}} />
-        </div>
-      </div>
-
-      {/* Mobile drawer sidebar */}
+      {/* ── SIDEBAR ─────────────────────────────────────────────── */}
+      {/* On mobile: off-canvas drawer (controlled by isSidebarOpen)  */}
+      {/* On desktop (lg+): always in-flow via lg:static inside Sidebar */}
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
 
-      {/* Main content — min-w-0 prevents flex overflow */}
-      <main
-        className="flex-1 min-w-0 overflow-x-hidden"
-        style={{ paddingTop: 0, position: 'relative', zIndex: 1 }}
+      {/* ── RIGHT PANEL ─────────────────────────────────────────── */}
+      <div
+        style={{
+          flex: 1,
+          minWidth: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          position: 'relative',
+          zIndex: 1,
+          overflowX: 'hidden',
+        }}
       >
-        {/* Inner padding — pt accounts for mobile header (h-16=64px), pb accounts for bottom tab bar (h-16=64px) */}
-        <div className="px-4 md:px-8 lg:px-12 pt-20 lg:pt-10 pb-28 lg:pb-12">
-          {children}
+        {/* Mobile-only top header bar */}
+        <div
+          className="lg:hidden"
+          style={{
+            position: 'sticky',
+            top: 0,
+            zIndex: 30,
+            height: '56px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '0 16px',
+            background: 'rgba(5,5,8,0.95)',
+            backdropFilter: 'blur(20px)',
+            borderBottom: '1px solid rgba(255,255,255,0.05)',
+            flexShrink: 0,
+          }}
+        >
+          <span
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontWeight: 700,
+              color: 'var(--amber-core)',
+              fontSize: '1rem',
+              letterSpacing: '0.08em',
+            }}
+          >
+            RIDEFLOW
+          </span>
+          <button
+            onClick={() => setIsSidebarOpen(true)}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: 'var(--amber-core)',
+              cursor: 'pointer',
+              padding: '8px',
+              display: 'flex',
+              alignItems: 'center',
+            }}
+          >
+            <Menu size={22} />
+          </button>
         </div>
-      </main>
 
-      <BottomTabBar />
+        {/* Main scrollable content */}
+        <main
+          style={{
+            flex: 1,
+            padding: '32px 32px 100px 32px',
+            overflowY: 'auto',
+            overflowX: 'hidden',
+          }}
+          className="lg:p-10 lg:pb-12"
+        >
+          {children}
+        </main>
+
+        <BottomTabBar />
+      </div>
     </div>
   );
 }

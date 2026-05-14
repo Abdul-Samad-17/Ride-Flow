@@ -108,39 +108,37 @@ export default function DriverDashboard() {
 
   return (
     <DashboardLayout>
-      <div className="w-full pb-24">
-        <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-20">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-bold mb-2">Driver Hub</h1>
-            <p className="text-[var(--text-muted)] text-sm md:text-base">
-              Welcome back, Capt. {user?.full_name?.split(' ')[0]}
-            </p>
-          </div>
-          <div className="flex w-full sm:w-auto gap-4 items-center">
-            <button 
-              onClick={handleToggleActive} 
-              disabled={toggleLoading}
-              className={`flex-1 sm:flex-initial flex items-center justify-center gap-3 py-4 px-8 rounded-2xl font-bold transition-all ${
-                isActive 
-                  ? 'bg-green-500 text-black shadow-[0_0_25px_rgba(34,197,94,0.3)]' 
-                  : 'bg-white/5 text-[var(--text-muted)] border border-white/5'
-              }`}
-            >
-              <Power size={18} /> {isActive ? 'GO OFFLINE' : 'GO ONLINE'}
-            </button>
-            <button className="w-12 h-12 rounded-2xl bg-white/5 border border-white/5 text-[var(--text-primary)] flex items-center justify-center hover:bg-white/10 transition-colors">
-              <Bell size={22} />
-            </button>
-          </div>
-        </header>
+      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+        <div>
+          <h1 className="text-3xl md:text-4xl font-bold mb-1">Driver Hub</h1>
+          <p className="text-[var(--text-muted)] text-sm">
+            Welcome back, Capt. {user?.full_name?.split(' ')[0]}
+          </p>
+        </div>
+        <div className="flex w-full sm:w-auto gap-3 items-center">
+          <button
+            onClick={handleToggleActive}
+            disabled={toggleLoading}
+            className={`flex-1 sm:flex-initial flex items-center justify-center gap-3 py-3 px-6 rounded-2xl font-bold transition-all ${
+              isActive
+                ? 'bg-green-500 text-black shadow-[0_0_25px_rgba(34,197,94,0.3)]'
+                : 'bg-white/5 text-[var(--text-muted)] border border-white/5'
+            }`}
+          >
+            <Power size={16} /> {isActive ? 'GO OFFLINE' : 'GO ONLINE'}
+          </button>
+          <button className="w-11 h-11 rounded-2xl bg-white/5 border border-white/5 text-[var(--text-primary)] flex items-center justify-center hover:bg-white/10 transition-colors">
+            <Bell size={20} />
+          </button>
+        </div>
+      </header>
 
-        <AnimatePresence mode="wait">
-          {activeTab === 'overview' && <OverviewTab key="overview" stats={stats} isActive={isActive} activeRide={activeRide} onNavigate={() => setActiveTab('rides')} />}
-          {activeTab === 'rides' && <ActiveRideTab key="rides" activeRide={activeRide} />}
-          {activeTab === 'earnings' && <EarningsTab key="earnings" />}
-          {activeTab === 'profile' && <ProfileTab key="profile" user={user} vehicles={vehicles} onAddVehicle={fetchVehicles} />}
-        </AnimatePresence>
-      </div>
+      <AnimatePresence mode="wait">
+        {activeTab === 'overview' && <OverviewTab key="overview" stats={stats} isActive={isActive} activeRide={activeRide} onNavigate={() => setActiveTab('rides')} />}
+        {activeTab === 'rides' && <ActiveRideTab key="rides" activeRide={activeRide} />}
+        {activeTab === 'earnings' && <EarningsTab key="earnings" />}
+        {activeTab === 'profile' && <ProfileTab key="profile" user={user} vehicles={vehicles} onAddVehicle={fetchVehicles} />}
+      </AnimatePresence>
     </DashboardLayout>
   );
 }
@@ -148,7 +146,7 @@ export default function DriverDashboard() {
 function OverviewTab({ stats, isActive, activeRide, onNavigate }) {
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="pb-12">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         <GlassCard level={1} className="p-8">
           <p className="label-caps text-[10px] mb-4">Today's Earnings</p>
           <div className="flex items-baseline gap-2">

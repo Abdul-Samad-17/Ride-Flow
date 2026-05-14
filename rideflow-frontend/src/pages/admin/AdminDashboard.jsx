@@ -78,32 +78,30 @@ export default function AdminDashboard() {
 
   return (
     <DashboardLayout>
-      <div className="w-full pb-24">
-        <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-20">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-bold mb-2">System Admin</h1>
-            <p className="text-[var(--text-muted)] text-sm md:text-base">
-              Live system oversight • {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-4 items-center">
-            {stats.pending_vehicles > 0 && <Badge status="Warning" pulse>{stats.pending_vehicles} Verifications</Badge>}
-            {stats.pending_payouts > 0 && <Badge status="Error">{stats.pending_payouts} Payouts</Badge>}
-            <button className="w-12 h-12 rounded-2xl bg-white/5 border border-white/5 text-[var(--text-primary)] flex items-center justify-center hover:bg-white/10 transition-colors">
-              <Bell size={22} />
-            </button>
-          </div>
-        </header>
+      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+        <div>
+          <h1 className="text-3xl md:text-4xl font-bold mb-1">System Admin</h1>
+          <p className="text-[var(--text-muted)] text-sm">
+            Live system oversight • {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-3 items-center">
+          {stats.pending_vehicles > 0 && <Badge status="Warning" pulse>{stats.pending_vehicles} Verifications</Badge>}
+          {stats.pending_payouts > 0 && <Badge status="Error">{stats.pending_payouts} Payouts</Badge>}
+          <button className="w-11 h-11 rounded-2xl bg-white/5 border border-white/5 text-[var(--text-primary)] flex items-center justify-center hover:bg-white/10 transition-colors">
+            <Bell size={20} />
+          </button>
+        </div>
+      </header>
 
-        <AnimatePresence mode="wait">
-          {activeTab === 'analytics' && <AnalyticsTab key="analytics" stats={stats} />}
-          {activeTab === 'verification' && <VerificationTab key="verification" queue={pendingVehicles} onAction={fetchPendingVehicles} />}
-          {activeTab === 'users' && <UsersTab key="users" users={usersList} onAction={fetchUsers} />}
-          {activeTab === 'fares' && <FareTab key="fares" configs={fareConfigs} onAction={fetchFares} />}
-          {activeTab === 'payouts' && <AdminPayoutsTab key="payouts" />}
-          {activeTab === 'reports' && <ReportsTab key="reports" />}
-        </AnimatePresence>
-      </div>
+      <AnimatePresence mode="wait">
+        {activeTab === 'analytics' && <AnalyticsTab key="analytics" stats={stats} />}
+        {activeTab === 'verification' && <VerificationTab key="verification" queue={pendingVehicles} onAction={fetchPendingVehicles} />}
+        {activeTab === 'users' && <UsersTab key="users" users={usersList} onAction={fetchUsers} />}
+        {activeTab === 'fares' && <FareTab key="fares" configs={fareConfigs} onAction={fetchFares} />}
+        {activeTab === 'payouts' && <AdminPayoutsTab key="payouts" />}
+        {activeTab === 'reports' && <ReportsTab key="reports" />}
+      </AnimatePresence>
     </DashboardLayout>
   );
 }
@@ -125,7 +123,7 @@ function AnalyticsTab({ stats }) {
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {kpis.map((kpi, i) => (
           <GlassCard key={i} level={1} className="p-8 border-l-4" style={{ borderLeftColor: kpi.color }}>
             <div className="flex justify-between items-center mb-6">
@@ -137,10 +135,10 @@ function AnalyticsTab({ stats }) {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-10">
-        <GlassCard level={2} className="p-10 min-h-[500px]">
-          <h3 className="text-xl font-bold mb-8">Network Activity</h3>
-          <div className="flex-1 min-h-[300px] flex items-center justify-center bg-white/5 rounded-3xl border border-dashed border-white/10">
+      <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-8">
+        <GlassCard level={2} className="p-8">
+          <h3 className="text-lg font-bold mb-6">Network Activity</h3>
+          <div className="min-h-[280px] flex items-center justify-center bg-white/5 rounded-2xl border border-dashed border-white/10">
             <p className="text-[var(--text-muted)] text-sm">Heatmap Visualization Stream Active</p>
           </div>
         </GlassCard>
