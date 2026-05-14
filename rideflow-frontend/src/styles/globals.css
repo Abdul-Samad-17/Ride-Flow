@@ -220,3 +220,40 @@ h1, h2, h3, h4, .font-display {
 ::-webkit-scrollbar-track { background: var(--bg-void); }
 ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
 ::-webkit-scrollbar-thumb:hover { background: #444; }
+
+/* ATOMIC SECTION 9 — TYPOGRAPHY SCALING */
+.text-hero {
+  font-size: clamp(2.5rem, 10vw, 7rem);
+}
+
+.text-display {
+  font-size: clamp(1.75rem, 5vw, 4rem);
+}
+
+.text-page-title {
+  font-size: clamp(1.25rem, 3vw, 2rem);
+}
+
+.text-stat {
+  font-size: clamp(1.5rem, 4vw, 2.5rem);
+}
+
+.text-balance {
+  font-size: clamp(2rem, 6vw, 3.5rem);
+}
+
+/* ATOMIC SECTION 7 — GOOGLE AUTOCOMPLETE & iOS FIXES */
+@media (max-width: 768px) {
+  .pac-container {
+    width: calc(100vw - 32px) !important;
+    left: 16px !important;
+    font-size: 16px; /* prevents iOS zoom on focus */
+  }
+  .pac-item {
+    padding: 14px 16px; /* larger touch targets */
+  }
+  
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+}

@@ -1,13 +1,12 @@
-// src/pages/admin/AdminDashboard.jsx
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Users, Car, Shield, DollarSign, TrendingUp, AlertCircle, CheckCircle, 
   Settings, LogOut, Zap, Bell, Search, Filter, Activity, X, UserMinus, 
   UserCheck, MoreVertical, Edit3, Save, Info, Ban, Clock, FileText, Download,
-  Calendar, Navigation, CreditCard
+  Navigation, CreditCard, ChevronRight
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 import { 
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, 
@@ -18,10 +17,12 @@ import useAuthStore from '../../store/authStore';
 import * as authService from '../../services/authService';
 import * as adminService from '../../services/adminService';
 import * as vehicleService from '../../services/vehicleService';
+import * as walletService from '../../services/walletService';
 import { GlassCard, Badge, Spinner, Input, Button, RatingStars, EmptyState } from '../../components/ui';
 import { useApi } from '../../hooks/useApi';
 import { exportToCSV } from '../../utils/exportCSV';
 import toast from 'react-hot-toast';
+import DashboardLayout from '../../components/layout/DashboardLayout';
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('analytics');
@@ -31,6 +32,19 @@ export default function AdminDashboard() {
   const [fareConfigs, setFareConfigs] = useState([]);
   const { user, clearAuth } = useAuthStore();
   const { loading, execute } = useApi();
+  const { pathname } = useLocation();
+
+  // Sync activeTab with URL
+  useEffect(() => {
+    const segments = pathname.split('/');
+    const path = segments[segments.length - 1];
+    const tabMap = { 'analytics': 'analytics', 'verification': 'verification', 'users': 'users', 'fares': 'fares', 'payouts': 'payouts', 'reports': 'reports' };
+    if (tabMap[path]) {
+      setActiveTab(tabMap[path]);
+    } else if (pathname === '/dashboard/admin') {
+      setActiveTab('analytics');
+    }
+  }, [pathname]);
 
   const fetchOverview = useCallback(async () => {
     const res = await adminService.getOverviewStats().catch(() => null);
@@ -62,48 +76,22 @@ export default function AdminDashboard() {
     return () => clearInterval(interval);
   }, [activeTab, fetchOverview, fetchPendingVehicles, fetchUsers, fetchFares]);
 
-  const handleLogout = async () => {
-    await authService.logout().catch(() => {});
-    clearAuth();
-    window.location.href = '/';
-  };
-
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-void)' }}>
-      <aside style={{ width: '280px', background: 'var(--bg-deep)', borderRight: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', padding: '40px 20px', position: 'fixed', height: '100vh', zIndex: 50 }}>
-        <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '60px', paddingLeft: '20px', textDecoration: 'none', color: 'inherit' }}>
-          <Zap size={22} color="var(--amber-core)" fill="var(--amber-core)" />
-          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.1rem', letterSpacing: '0.05em' }}>RF COMMAND</span>
-        </Link>
-        <nav style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {[
-            { id: 'analytics', label: 'Analytics', icon: Activity },
-            { id: 'verification', label: 'Verifications', icon: Shield },
-            { id: 'users', label: 'Users', icon: Users },
-            { id: 'fares', label: 'Fare Settings', icon: DollarSign },
-            { id: 'payouts', label: 'Payout Requests', icon: CreditCard },
-            { id: 'reports', label: 'Intelligence Reports', icon: FileText },
-          ].map(item => (
-            <button key={item.id} onClick={() => setActiveTab(item.id)} style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px 20px', borderRadius: '12px', border: 'none', cursor: 'pointer', textAlign: 'left', background: activeTab === item.id ? 'var(--amber-ghost)' : 'transparent', color: activeTab === item.id ? 'var(--amber-core)' : 'var(--text-muted)', transition: 'all 0.2s', fontWeight: activeTab === item.id ? 600 : 500 }}>
-              <item.icon size={20} />
-              <span style={{ fontSize: '14px' }}>{item.label}</span>
-            </button>
-          ))}
-        </nav>
-        <div style={{ marginTop: 'auto', padding: '20px' }}>
-          <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '14px' }}><LogOut size={18} /> Exit Console</button>
-        </div>
-      </aside>
-
-      <main style={{ flex: 1, marginLeft: '280px', padding: '40px 60px' }}>
-        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '48px' }}>
+    <DashboardLayout>
+      <div className="max-w-7xl mx-auto">
+        <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-12">
           <div>
-            <h1 style={{ fontSize: '2rem', marginBottom: '8px' }}>System Admin</h1>
-            <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>Live system oversight • {new Date().toLocaleTimeString()}</p>
+            <h1 className="text-3xl md:text-4xl font-bold mb-2">System Admin</h1>
+            <p className="text-[var(--text-muted)] text-sm md:text-base">
+              Live system oversight • {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </p>
           </div>
-          <div style={{ display: 'flex', gap: '16px' }}>
-            {stats.pending_vehicles > 0 && <Badge status="Warning" pulse>{stats.pending_vehicles} Pending Verifications</Badge>}
-            {stats.pending_payouts > 0 && <Badge status="Error">{stats.pending_payouts} Payout Requests</Badge>}
+          <div className="flex flex-wrap gap-4 items-center">
+            {stats.pending_vehicles > 0 && <Badge status="Warning" pulse>{stats.pending_vehicles} Verifications</Badge>}
+            {stats.pending_payouts > 0 && <Badge status="Error">{stats.pending_payouts} Payouts</Badge>}
+            <button className="w-12 h-12 rounded-2xl bg-white/5 border border-white/5 text-[var(--text-primary)] flex items-center justify-center hover:bg-white/10 transition-colors">
+              <Bell size={22} />
+            </button>
           </div>
         </header>
 
@@ -115,8 +103,66 @@ export default function AdminDashboard() {
           {activeTab === 'payouts' && <AdminPayoutsTab key="payouts" />}
           {activeTab === 'reports' && <ReportsTab key="reports" />}
         </AnimatePresence>
-      </main>
-    </div>
+      </div>
+    </DashboardLayout>
+  );
+}
+
+function AnalyticsTab({ stats }) {
+  const kpis = [
+    { label: 'Revenue (Today)', value: `PKR ${parseFloat(stats.revenue_today || 0).toLocaleString()}`, icon: DollarSign, color: 'var(--amber-core)' },
+    { label: 'Rides (Today)', value: stats.rides_today || 0, icon: Car, color: 'var(--text-primary)' },
+    { label: 'Captains Online', value: stats.online_drivers || 0, icon: Zap, color: '#22C55E' },
+    { label: 'Low Ratings', value: stats.low_rated_drivers || 0, icon: AlertCircle, color: '#EF4444' }
+  ];
+
+  const subKpis = [
+    { label: 'Total Riders', value: stats.total_riders || 0, icon: Users },
+    { label: 'Total Drivers', value: stats.total_drivers || 0, icon: Shield },
+    { label: 'Restricted Users', value: stats.restricted_users || 0, icon: UserMinus },
+    { label: 'Pending Payouts', value: stats.pending_payouts || 0, icon: DollarSign }
+  ];
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+        {kpis.map((kpi, i) => (
+          <GlassCard key={i} level={1} className="p-8 border-l-4" style={{ borderLeftColor: kpi.color }}>
+            <div className="flex justify-between items-center mb-6">
+              <p className="label-caps text-[10px] tracking-widest">{kpi.label}</p>
+              <kpi.icon size={18} color={kpi.color} />
+            </div>
+            <div className="text-3xl font-black font-mono">{kpi.value}</div>
+          </GlassCard>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-8">
+        <GlassCard level={2} className="p-10 min-h-[400px]">
+          <h3 className="text-xl font-bold mb-8">Network Activity</h3>
+          <div className="flex-1 min-h-[300px] flex items-center justify-center bg-white/5 rounded-3xl border border-dashed border-white/10">
+            <p className="text-[var(--text-muted)] text-sm">Heatmap Visualization Stream Active</p>
+          </div>
+        </GlassCard>
+
+        <GlassCard level={2} className="p-8">
+          <h4 className="label-caps text-[10px] mb-8">System Health</h4>
+          <div className="flex flex-col gap-6">
+            {subKpis.map((kpi, i) => (
+              <div key={i} className="flex justify-between items-center">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/5">
+                    <kpi.icon size={16} className="text-[var(--text-muted)]" />
+                  </div>
+                  <span className="text-sm font-medium text-[var(--text-secondary)]">{kpi.label}</span>
+                </div>
+                <span className="text-base font-black font-mono">{kpi.value}</span>
+              </div>
+            ))}
+          </div>
+        </GlassCard>
+      </div>
+    </motion.div>
   );
 }
 
@@ -130,14 +176,14 @@ function ReportsTab() {
   });
 
   const reports = [
-    { id: 'revenue-day', title: 'Daily Revenue', desc: 'Financial performance over time', icon: TrendingUp, type: 'line', service: adminService.getRevenueByDay },
-    { id: 'revenue-city', title: 'Revenue by City', desc: 'Geographic market analysis', icon: Navigation, type: 'bar', service: adminService.getRevenueByCity },
-    { id: 'revenue-method', title: 'Payment Distribution', desc: 'Usage of different payment modes', icon: CreditCard, type: 'pie', service: adminService.getRevenueByMethod },
-    { id: 'driver-earnings', title: 'Captain Earnings', desc: 'Top performing drivers', icon: DollarSign, type: 'bar', service: adminService.getDriverEarnings },
-    { id: 'trip-counts', title: 'Trip Density', desc: 'Rides per driver analysis', icon: Car, type: 'bar', service: adminService.getTripCounts },
-    { id: 'promo-usage', title: 'Promo Effectiveness', desc: 'Usage stats per code', icon: Zap, type: 'bar', service: adminService.getPromoUsage },
-    { id: 'low-rated', title: 'Quality Audit', desc: 'Drivers requiring attention', icon: AlertCircle, type: 'table', service: adminService.getLowRatedDrivers },
-    { id: 'full-trips', title: 'Full Trip Audit', desc: 'Comprehensive ride lifecycle data', icon: Info, type: 'table', service: adminService.getFullTripReport },
+    { id: 'revenue-day', title: 'Daily Revenue', desc: 'Performance over time', icon: TrendingUp, type: 'line', service: adminService.getRevenueByDay },
+    { id: 'revenue-city', title: 'By City', desc: 'Market analysis', icon: Navigation, type: 'bar', service: adminService.getRevenueByCity },
+    { id: 'revenue-method', title: 'Payments', desc: 'Payment distribution', icon: CreditCard, type: 'pie', service: adminService.getRevenueByMethod },
+    { id: 'driver-earnings', title: 'Earnings', desc: 'Top captains', icon: DollarSign, type: 'bar', service: adminService.getDriverEarnings },
+    { id: 'trip-counts', title: 'Density', desc: 'Rides per driver', icon: Car, type: 'bar', service: adminService.getTripCounts },
+    { id: 'promo-usage', title: 'Promos', desc: 'Effectiveness', icon: Zap, type: 'bar', service: adminService.getPromoUsage },
+    { id: 'low-rated', title: 'Quality', desc: 'Audit drivers', icon: AlertCircle, type: 'table', service: adminService.getLowRatedDrivers },
+    { id: 'full-trips', title: 'Trips', desc: 'Lifecycle audit', icon: Info, type: 'table', service: adminService.getFullTripReport },
   ];
 
   const handleRunReport = async (report) => {
@@ -157,101 +203,122 @@ function ReportsTab() {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-      <div style={{ display: 'flex', gap: '16px', marginBottom: '32px' }}>
-        <Input type="date" label="From Date" value={dates.from} onChange={e => setDates(p => ({ ...p, from: e.target.value }))} />
-        <Input type="date" label="To Date" value={dates.to} onChange={e => setDates(p => ({ ...p, to: e.target.value }))} />
+      <div className="flex flex-col sm:flex-row gap-4 mb-10">
+        <Input type="date" label="From Date" value={dates.from} onChange={e => setDates(p => ({ ...p, from: e.target.value }))} className="flex-1" />
+        <Input type="date" label="To Date" value={dates.to} onChange={e => setDates(p => ({ ...p, to: e.target.value }))} className="flex-1" />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', marginBottom: '48px' }}>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
         {reports.map(r => (
-          <GlassCard key={r.id} level={2} onClick={() => handleRunReport(r)} style={{ padding: '24px', cursor: 'pointer', border: activeReport?.id === r.id ? '1px solid var(--amber-core)' : '1px solid transparent', background: activeReport?.id === r.id ? 'var(--amber-ghost)' : 'transparent', transition: 'all 0.3s' }}>
-            <r.icon size={20} color={activeReport?.id === r.id ? 'var(--amber-core)' : 'var(--text-muted)'} style={{ marginBottom: '16px' }} />
-            <h4 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '4px' }}>{r.title}</h4>
-            <p style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{r.desc}</p>
+          <GlassCard 
+            key={r.id} 
+            level={2} 
+            onClick={() => handleRunReport(r)} 
+            className={`p-6 cursor-pointer border transition-all duration-300 ${
+              activeReport?.id === r.id ? 'border-[var(--amber-core)] bg-amber-ghost/20' : 'border-white/5 hover:border-white/10'
+            }`}
+          >
+            <r.icon size={20} className={`mb-4 ${activeReport?.id === r.id ? 'text-[var(--amber-core)]' : 'text-[var(--text-muted)]'}`} />
+            <h4 className="text-sm font-bold mb-1">{r.title}</h4>
+            <p className="text-[10px] text-[var(--text-muted)] leading-tight">{r.desc}</p>
           </GlassCard>
         ))}
       </div>
 
-      {loading && <div style={{ textAlign: 'center', padding: '60px' }}><Spinner size={40} /></div>}
+      {loading && <div className="py-20 text-center"><Spinner size={40} /></div>}
 
       {!data && !loading && (
         <EmptyState 
           icon={TrendingUp} 
-          title="Run the report to see results" 
-          subtitle="Select a report type above to visualize system performance." 
+          title="Intelligence Ready" 
+          subtitle="Select a module above to generate real-time system analytics." 
         />
       )}
 
       {data && !loading && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-          <GlassCard level={3} style={{ padding: '40px', marginBottom: '40px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
-              <h3 style={{ fontSize: '1.25rem' }}>{activeReport.title} Analysis</h3>
-              <Button variant="ghost" onClick={() => exportToCSV(data, activeReport.id)}><Download size={16} /> Export CSV</Button>
+          <GlassCard level={3} className="p-8 md:p-12 mb-12">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-10">
+              <h3 className="text-2xl font-bold">{activeReport.title} Analysis</h3>
+              <Button variant="ghost" onClick={() => exportToCSV(data, activeReport.id)} className="bg-white/5">
+                <Download size={16} className="mr-2" /> Export Dataset
+              </Button>
             </div>
 
-            <div style={{ height: '400px', marginBottom: '48px', background: 'rgba(255,255,255,0.01)', borderRadius: '20px', padding: '20px' }}>
+            <div className="h-[400px] mb-12 bg-black/20 rounded-3xl p-6 border border-white/5">
               <ResponsiveContainer width="100%" height="100%">
                 {activeReport.type === 'line' ? (
                   <LineChart data={data}>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                    <XAxis dataKey="date" stroke="var(--text-muted)" fontSize={12} />
-                    <YAxis stroke="var(--text-muted)" fontSize={12} />
-                    <Tooltip contentStyle={{ background: 'var(--bg-deep)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
+                    <XAxis dataKey="date" stroke="var(--text-muted)" fontSize={10} />
+                    <YAxis stroke="var(--text-muted)" fontSize={10} />
+                    <Tooltip contentStyle={{ background: 'var(--bg-deep)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }} />
                     <Legend />
-                    <Line type="monotone" dataKey="revenue" stroke="var(--amber-core)" strokeWidth={3} dot={{ r: 4, fill: 'var(--amber-core)' }} />
-                    <Line type="monotone" dataKey="discounts" stroke="#EF4444" strokeWidth={2} />
+                    <Line type="monotone" dataKey="revenue" stroke="var(--amber-core)" strokeWidth={4} dot={{ r: 5, fill: 'var(--amber-core)', strokeWidth: 0 }} activeDot={{ r: 8 }} />
+                    <Line type="monotone" dataKey="discounts" stroke="#EF4444" strokeWidth={2} dot={false} />
                   </LineChart>
                 ) : activeReport.type === 'bar' ? (
                   <BarChart data={data} layout={activeReport.id === 'revenue-city' ? 'vertical' : 'horizontal'}>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
                     {activeReport.id === 'revenue-city' ? (
                       <>
-                        <XAxis type="number" stroke="var(--text-muted)" />
-                        <YAxis type="category" dataKey="city" stroke="var(--text-muted)" fontSize={11} width={100} />
+                        <XAxis type="number" stroke="var(--text-muted)" fontSize={10} />
+                        <YAxis type="category" dataKey="city" stroke="var(--text-muted)" fontSize={10} width={80} />
                       </>
                     ) : (
                       <>
-                        <XAxis dataKey={activeReport.id === 'promo-usage' ? 'promo_code' : 'full_name'} stroke="var(--text-muted)" fontSize={11} />
-                        <YAxis stroke="var(--text-muted)" />
+                        <XAxis dataKey={activeReport.id === 'promo-usage' ? 'promo_code' : 'full_name'} stroke="var(--text-muted)" fontSize={10} />
+                        <YAxis stroke="var(--text-muted)" fontSize={10} />
                       </>
                     )}
-                    <Tooltip cursor={{ fill: 'rgba(255,191,0,0.05)' }} contentStyle={{ background: 'var(--bg-deep)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
-                    <Bar dataKey={activeReport.id === 'trip-counts' ? 'trip_count' : activeReport.id === 'promo-usage' ? 'usage_count' : 'revenue' || 'earnings'} fill="var(--amber-core)" radius={activeReport.id === 'revenue-city' ? [0, 4, 4, 0] : [4, 4, 0, 0]} />
+                    <Tooltip cursor={{ fill: 'rgba(255,255,255,0.02)' }} contentStyle={{ background: 'var(--bg-deep)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }} />
+                    <Bar dataKey={activeReport.id === 'trip-counts' ? 'trip_count' : activeReport.id === 'promo-usage' ? 'usage_count' : 'revenue' || 'earnings'} fill="var(--amber-core)" radius={activeReport.id === 'revenue-city' ? [0, 6, 6, 0] : [6, 6, 0, 0]} />
                   </BarChart>
                 ) : activeReport.type === 'pie' ? (
                   <PieChart>
-                    <Pie data={data} innerRadius={80} outerRadius={120} paddingAngle={5} dataKey="revenue" nameKey="payment_method" label>
-                      {data.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
+                    <Pie data={data} innerRadius="60%" outerRadius="80%" paddingAngle={5} dataKey="revenue" nameKey="payment_method" label>
+                      {data.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="none" />)}
                     </Pie>
-                    <Tooltip contentStyle={{ background: 'var(--bg-deep)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
-                    <Legend />
+                    <Tooltip contentStyle={{ background: 'var(--bg-deep)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }} />
+                    <Legend verticalAlign="bottom" height={36}/>
                   </PieChart>
                 ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)' }}>
-                    <Info size={48} style={{ marginBottom: '16px', opacity: 0.2 }} />
-                    <p>Tabular Audit View Active</p>
+                  <div className="flex flex-col items-center justify-center h-full text-[var(--text-muted)] gap-4 opacity-30">
+                    <FileText size={64} />
+                    <p className="font-bold uppercase tracking-widest text-xs">Tabular Audit Active</p>
                   </div>
                 )}
               </ResponsiveContainer>
             </div>
 
-            <div style={{ overflowX: 'auto', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+            <div className="overflow-x-auto rounded-2xl border border-white/5">
+              <table className="w-full border-collapse text-xs">
                 <thead>
-                  <tr style={{ textAlign: 'left', background: 'rgba(255,255,255,0.02)' }}>
-                    {Object.keys(data[0]).map(k => <th key={k} style={{ padding: '16px', color: 'var(--text-muted)', textTransform: 'uppercase', fontSize: '10px', letterSpacing: '0.05em' }}>{k.replace(/_/g, ' ')}</th>)}
+                  <tr className="text-left bg-white/5 border-b border-white/5">
+                    {Object.keys(data[0]).map(k => (
+                      <th key={k} className="p-5 text-[var(--text-muted)] uppercase tracking-widest font-bold whitespace-nowrap">
+                        {k.replace(/_/g, ' ')}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-white/5">
                   {data.slice(0, 100).map((row, i) => (
-                    <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
-                      {Object.values(row).map((v, j) => <td key={j} style={{ padding: '16px' }}>{v === null ? '—' : String(v)}</td>)}
+                    <tr key={i} className="hover:bg-white/[0.02] transition-colors">
+                      {Object.values(row).map((v, j) => (
+                        <td key={j} className="p-5 whitespace-nowrap">
+                          {v === null ? '—' : String(v)}
+                        </td>
+                      ))}
                     </tr>
                   ))}
                 </tbody>
               </table>
-              {data.length > 100 && <p style={{ padding: '16px', textAlign: 'center', fontSize: '12px', color: 'var(--text-muted)' }}>Showing top 100 results. Use export for full dataset.</p>}
+              {data.length > 100 && (
+                <div className="p-4 text-center text-[var(--text-muted)] border-t border-white/5">
+                  Showing top 100 results. Export for full dataset.
+                </div>
+              )}
             </div>
           </GlassCard>
         </motion.div>
@@ -260,71 +327,11 @@ function ReportsTab() {
   );
 }
 
-function AnalyticsTab({ stats }) {
-  const kpis = [
-    { label: 'Revenue (Today)', value: `PKR ${parseFloat(stats.revenue_today || 0).toLocaleString()}`, icon: DollarSign, color: 'var(--amber-core)' },
-    { label: 'Rides (Today)', value: stats.rides_today || 0, icon: Car, color: 'var(--text-primary)' },
-    { label: 'Captains Online', value: stats.online_drivers || 0, icon: Zap, color: '#22C55E' },
-    { label: 'Low Ratings', value: stats.low_rated_drivers || 0, icon: AlertCircle, color: '#EF4444' }
-  ];
-
-  const subKpis = [
-    { label: 'Total Riders', value: stats.total_riders || 0, icon: Users },
-    { label: 'Total Drivers', value: stats.total_drivers || 0, icon: Shield },
-    { label: 'Restricted', value: stats.restricted_users || 0, icon: UserMinus },
-    { label: 'Pending Payouts', value: stats.pending_payouts || 0, icon: DollarSign }
-  ];
-
-  return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '24px', marginBottom: '40px' }}>
-        {kpis.map((kpi, i) => (
-          <GlassCard key={i} level={1} style={{ padding: '24px', borderLeft: `4px solid ${kpi.color}` }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
-              <p className="label-caps" style={{ fontSize: '10px' }}>{kpi.label}</p>
-              <kpi.icon size={16} color={kpi.color} />
-            </div>
-            <div className="font-mono" style={{ fontSize: '1.75rem', fontWeight: 700 }}>{kpi.value}</div>
-          </GlassCard>
-        ))}
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '32px' }}>
-        <GlassCard level={2} style={{ padding: '40px', minHeight: '400px' }}>
-          <h3 style={{ fontSize: '1.25rem', marginBottom: '32px' }}>Network Activity</h3>
-          <div style={{ height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: '20px', border: '1px dashed rgba(255,255,255,0.1)' }}>
-            <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>[Heatmap Visualization Pending Data stream...]</p>
-          </div>
-        </GlassCard>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          <GlassCard level={2} style={{ padding: '32px' }}>
-            <h4 className="label-caps" style={{ marginBottom: '24px' }}>System Health</h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              {subKpis.map((kpi, i) => (
-                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(255,255,255,0.03)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <kpi.icon size={14} color="var(--text-muted)" />
-                    </div>
-                    <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>{kpi.label}</span>
-                  </div>
-                  <span style={{ fontWeight: 700 }}>{kpi.value}</span>
-                </div>
-              ))}
-            </div>
-          </GlassCard>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
 function UsersTab({ users, onAction }) {
   const [filters, setFilters] = useState({ role: 'All', status: 'All', search: '' });
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedUser, setSelectedUser] = useState(null);
-  const [modalMode, setModalMode] = useState(null); // 'status' | 'ban'
+  const [modalMode, setModalMode] = useState(null);
   const [reason, setReason] = useState('');
   const { loading, execute } = useApi();
 
@@ -338,10 +345,7 @@ function UsersTab({ users, onAction }) {
   }, [debouncedSearch, filters.role, filters.status, onAction]);
 
   const handleUpdateStatus = async (newStatus) => {
-    if (!reason && newStatus !== 'Active') {
-      toast.error("Reason is required");
-      return;
-    }
+    if (!reason && newStatus !== 'Active') return toast.error("Reason is required");
     await execute(() => adminService.updateUserStatus(selectedUser.user_id, newStatus, reason), {
       successMessage: "User status updated",
       onSuccess: () => {
@@ -355,116 +359,166 @@ function UsersTab({ users, onAction }) {
 
   return (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
-      <div style={{ display: 'flex', gap: '16px', marginBottom: '32px' }}>
-        <div style={{ flex: 1, position: 'relative' }}>
-          <Search size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+      <div className="flex flex-col lg:flex-row gap-4 mb-10">
+        <div className="flex-1 relative">
+          <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
           <input 
-            type="text" placeholder="Search by name or email..." 
+            type="text" placeholder="Search identity..." 
+            className="w-full bg-white/5 border border-white/10 p-4 pl-12 rounded-xl text-white outline-none focus:border-[var(--amber-core)] transition-colors"
             value={filters.search} onChange={e => setFilters(p => ({ ...p, search: e.target.value }))}
-            style={{ width: '100%', background: 'var(--bg-glass)', border: '1px solid rgba(255,255,255,0.05)', padding: '14px 14px 14px 48px', borderRadius: '14px', color: 'white', outline: 'none' }}
           />
         </div>
-        <select 
-          value={filters.role} onChange={e => setFilters(p => ({ ...p, role: e.target.value }))}
-          style={{ background: 'var(--bg-glass)', border: '1px solid rgba(255,255,255,0.05)', padding: '0 20px', borderRadius: '14px', color: 'white', outline: 'none' }}
-        >
-          <option value="All">All Roles</option>
-          <option value="Rider">Riders</option>
-          <option value="Driver">Drivers</option>
-          <option value="Admin">Admins</option>
-        </select>
-        <select 
-          value={filters.status} onChange={e => setFilters(p => ({ ...p, status: e.target.value }))}
-          style={{ background: 'var(--bg-glass)', border: '1px solid rgba(255,255,255,0.05)', padding: '0 20px', borderRadius: '14px', color: 'white', outline: 'none' }}
-        >
-          <option value="All">All Status</option>
-          <option value="Active">Active</option>
-          <option value="Suspended">Suspended</option>
-          <option value="Banned">Banned</option>
-        </select>
+        <div className="flex gap-4">
+          <select 
+            className="bg-white/5 border border-white/10 px-6 py-4 rounded-xl text-white outline-none"
+            value={filters.role} onChange={e => setFilters(p => ({ ...p, role: e.target.value }))}
+          >
+            <option value="All">All Roles</option>
+            <option value="Rider" className="bg-[#050508]">Riders</option>
+            <option value="Driver" className="bg-[#050508]">Drivers</option>
+            <option value="Admin" className="bg-[#050508]">Admins</option>
+          </select>
+          <select 
+            className="bg-white/5 border border-white/10 px-6 py-4 rounded-xl text-white outline-none"
+            value={filters.status} onChange={e => setFilters(p => ({ ...p, status: e.target.value }))}
+          >
+            <option value="All">All Status</option>
+            <option value="Active" className="bg-[#050508]">Active</option>
+            <option value="Suspended" className="bg-[#050508]">Suspended</option>
+            <option value="Banned" className="bg-[#050508]">Banned</option>
+          </select>
+        </div>
       </div>
 
-      <GlassCard level={2} style={{ overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-          <thead>
-            <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(255,255,255,0.02)' }}>
-              <th style={{ padding: '20px 32px', fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>USER</th>
-              <th style={{ padding: '20px 32px', fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>ROLE</th>
-              <th style={{ padding: '20px 32px', fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>STATUS</th>
-              <th style={{ padding: '20px 32px', fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>STATS</th>
-              <th style={{ padding: '20px 32px', fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>ACTIONS</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map(u => (
-              <tr key={u.user_id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
-                <td style={{ padding: '20px 32px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                    <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: u.role === 'Admin' ? '#EF4444' : u.role === 'Driver' ? 'var(--amber-core)' : '#3B82F6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 700, color: '#000' }}>
-                      {u.full_name.charAt(0)}
-                    </div>
-                    <div>
-                      <div style={{ fontWeight: 600 }}>{u.full_name}</div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{u.email}</div>
-                    </div>
-                  </div>
-                </td>
-                <td style={{ padding: '20px 32px' }}>
-                  <Badge status={u.role === 'Admin' ? 'Error' : u.role === 'Driver' ? 'Active' : 'Info'}>{u.role}</Badge>
-                </td>
-                <td style={{ padding: '20px 32px' }}>
-                  <Badge status={u.account_status === 'Active' ? 'Active' : u.account_status === 'Suspended' ? 'Warning' : 'Error'}>{u.account_status}</Badge>
-                </td>
-                <td style={{ padding: '20px 32px' }}>
-                  {u.role === 'Driver' ? (
-                    <div>
-                      <RatingStars value={u.driver_rating || 5} size="sm" />
-                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>{u.total_trips || 0} trips</div>
-                    </div>
-                  ) : '—'}
-                </td>
-                <td style={{ padding: '20px 32px' }}>
-                  {u.role !== 'Admin' && (
-                    <div style={{ display: 'flex', gap: '12px' }}>
-                      {u.account_status !== 'Active' && (
-                        <button onClick={() => { setSelectedUser(u); handleUpdateStatus('Active'); }} style={{ background: 'none', border: 'none', color: '#22C55E', cursor: 'pointer' }} title="Activate"><UserCheck size={18} /></button>
-                      )}
-                      {u.account_status === 'Active' && (
-                        <button onClick={() => { setSelectedUser(u); setModalMode('suspend'); }} style={{ background: 'none', border: 'none', color: 'var(--amber-core)', cursor: 'pointer' }} title="Suspend"><UserMinus size={18} /></button>
-                      )}
-                      <button onClick={() => { setSelectedUser(u); setModalMode('ban'); }} style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer' }} title="Ban Permanent"><Ban size={18} /></button>
-                    </div>
-                  )}
-                </td>
+      <div className="hidden lg:block">
+        <GlassCard level={2} className="overflow-hidden">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-white/5 border-b border-white/5">
+                <th className="p-6 text-[var(--text-muted)] text-[10px] font-bold uppercase tracking-widest">User Identity</th>
+                <th className="p-6 text-[var(--text-muted)] text-[10px] font-bold uppercase tracking-widest">Access Level</th>
+                <th className="p-6 text-[var(--text-muted)] text-[10px] font-bold uppercase tracking-widest">Account State</th>
+                <th className="p-6 text-[var(--text-muted)] text-[10px] font-bold uppercase tracking-widest">Performance</th>
+                <th className="p-6 text-[var(--text-muted)] text-[10px] font-bold uppercase tracking-widest">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </GlassCard>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {users.map(u => (
+                <tr key={u.user_id} className="hover:bg-white/[0.01]">
+                  <td className="p-6">
+                    <div className="flex items-center gap-4">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-black ${
+                        u.role === 'Admin' ? 'bg-red-500' : u.role === 'Driver' ? 'bg-[var(--amber-core)]' : 'bg-blue-500'
+                      }`}>
+                        {u.full_name.charAt(0)}
+                      </div>
+                      <div>
+                        <div className="font-bold">{u.full_name}</div>
+                        <div className="text-[10px] text-[var(--text-muted)]">{u.email}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="p-6">
+                    <Badge status={u.role === 'Admin' ? 'Error' : u.role === 'Driver' ? 'Active' : 'Info'}>{u.role}</Badge>
+                  </td>
+                  <td className="p-6">
+                    <Badge status={u.account_status === 'Active' ? 'Active' : u.account_status === 'Suspended' ? 'Warning' : 'Error'}>{u.account_status}</Badge>
+                  </td>
+                  <td className="p-6">
+                    {u.role === 'Driver' ? (
+                      <div className="flex flex-col gap-1">
+                        <RatingStars value={u.driver_rating || 5} size="sm" />
+                        <span className="text-[10px] text-[var(--text-muted)]">{u.total_trips || 0} trips completed</span>
+                      </div>
+                    ) : '—'}
+                  </td>
+                  <td className="p-6">
+                    {u.role !== 'Admin' && (
+                      <div className="flex gap-4">
+                        {u.account_status !== 'Active' && (
+                          <button onClick={() => { setSelectedUser(u); handleUpdateStatus('Active'); }} className="text-green-500 hover:scale-110 transition-transform"><UserCheck size={18} /></button>
+                        )}
+                        {u.account_status === 'Active' && (
+                          <button onClick={() => { setSelectedUser(u); setModalMode('suspend'); }} className="text-[var(--amber-core)] hover:scale-110 transition-transform"><UserMinus size={18} /></button>
+                        )}
+                        <button onClick={() => { setSelectedUser(u); setModalMode('ban'); }} className="text-red-500 hover:scale-110 transition-transform"><Ban size={18} /></button>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </GlassCard>
+      </div>
+
+      {/* Mobile Card List */}
+      <div className="lg:hidden flex flex-col gap-4">
+        {users.map(u => (
+          <GlassCard key={u.user_id} level={2} className="p-6">
+            <div className="flex justify-between items-start mb-6">
+              <div className="flex items-center gap-4">
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-black ${
+                  u.role === 'Admin' ? 'bg-red-500' : u.role === 'Driver' ? 'bg-[var(--amber-core)]' : 'bg-blue-500'
+                }`}>
+                  {u.full_name.charAt(0)}
+                </div>
+                <div>
+                  <h4 className="font-bold">{u.full_name}</h4>
+                  <p className="text-[10px] text-[var(--text-muted)] font-mono">{u.email}</p>
+                </div>
+              </div>
+              <Badge status={u.account_status === 'Active' ? 'Active' : 'Error'}>{u.account_status}</Badge>
+            </div>
+            <div className="flex justify-between items-center py-4 border-y border-white/5 mb-6">
+              <div className="flex flex-col gap-1">
+                <span className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-widest">Role</span>
+                <span className="text-sm font-bold">{u.role}</span>
+              </div>
+              {u.role === 'Driver' && (
+                <div className="text-right flex flex-col gap-1">
+                  <span className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-widest">Performance</span>
+                  <RatingStars value={u.driver_rating || 5} size="sm" />
+                </div>
+              )}
+            </div>
+            {u.role !== 'Admin' && (
+              <div className="grid grid-cols-3 gap-2">
+                {u.account_status !== 'Active' ? (
+                  <Button size="sm" className="col-span-3 font-bold" onClick={() => { setSelectedUser(u); handleUpdateStatus('Active'); }}>Activate</Button>
+                ) : (
+                  <>
+                    <Button size="sm" variant="secondary" className="col-span-2 font-bold" onClick={() => { setSelectedUser(u); setModalMode('suspend'); }}>Suspend</Button>
+                    <Button size="sm" variant="ghost" className="text-red-500 bg-red-500/10 font-bold" onClick={() => { setSelectedUser(u); setModalMode('ban'); }}>Ban</Button>
+                  </>
+                )}
+              </div>
+            )}
+          </GlassCard>
+        ))}
+      </div>
 
       <AnimatePresence>
         {(modalMode === 'suspend' || modalMode === 'ban') && (
-          <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} style={{ width: '400px' }}>
-              <GlassCard level={3} style={{ padding: '40px' }}>
-                <h3 style={{ fontSize: '1.25rem', marginBottom: '8px', color: modalMode === 'ban' ? '#EF4444' : 'white' }}>
-                  {modalMode === 'ban' ? 'Ban User Permanently' : 'Suspend Account'}
-                </h3>
-                <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginBottom: '24px' }}>
-                  Action target: {selectedUser?.full_name}
-                </p>
-                <textarea 
-                  placeholder="State reason for this action..."
-                  value={reason} onChange={e => setReason(e.target.value)}
-                  style={{ width: '100%', height: '100px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '12px', color: 'white', marginBottom: '24px', resize: 'none' }}
-                />
-                <div style={{ display: 'flex', gap: '16px' }}>
-                  <Button variant="ghost" block onClick={() => { setModalMode(null); setReason(''); }}>Cancel</Button>
-                  <Button variant={modalMode === 'ban' ? 'error' : 'primary'} block onClick={() => handleUpdateStatus(modalMode === 'ban' ? 'Banned' : 'Suspended')}>
-                    Confirm {modalMode === 'ban' ? 'Ban' : 'Suspend'}
-                  </Button>
-                </div>
-              </GlassCard>
+          <div className="fixed inset-0 z-[1000] bg-black/80 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-6">
+            <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} className="w-full max-w-md bg-[var(--bg-deep)] rounded-t-[32px] sm:rounded-[32px] border-t sm:border border-white/10 p-8 md:p-12">
+              <h3 className={`text-2xl font-bold mb-2 ${modalMode === 'ban' ? 'text-red-500' : 'text-white'}`}>
+                {modalMode === 'ban' ? 'System Ban' : 'Account Suspension'}
+              </h3>
+              <p className="text-[var(--text-muted)] text-sm mb-10">Target: <span className="text-white font-bold">{selectedUser?.full_name}</span></p>
+              
+              <textarea 
+                placeholder="Detailed reason for this directive..."
+                className="w-full bg-white/5 border border-white/10 rounded-2xl p-5 text-white text-sm h-32 resize-none mb-10 focus:border-[var(--amber-core)] outline-none"
+                value={reason} onChange={e => setReason(e.target.value)}
+              />
+              
+              <div className="grid grid-cols-2 gap-4">
+                <Button variant="ghost" className="bg-white/5" onClick={() => { setModalMode(null); setReason(''); }}>Cancel</Button>
+                <Button variant={modalMode === 'ban' ? 'error' : 'primary'} onClick={() => handleUpdateStatus(modalMode === 'ban' ? 'Banned' : 'Suspended')}>
+                  Confirm
+                </Button>
+              </div>
             </motion.div>
           </div>
         )}
@@ -495,7 +549,7 @@ function FareTab({ configs, onAction }) {
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '32px' }}>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {configs.map(conf => {
           const isEditing = editing === conf.vehicle_type;
           const current = isEditing ? form : conf;
@@ -504,35 +558,37 @@ function FareTab({ configs, onAction }) {
           const samplePrice = parseFloat(current.base_rate) + (sampleDist * parseFloat(current.per_km_rate)) + (sampleTime * parseFloat(current.per_min_rate));
 
           return (
-            <GlassCard key={conf.vehicle_type} level={2} style={{ padding: '32px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                <h3 style={{ fontSize: '1.5rem', fontWeight: 800 }}>{conf.vehicle_type}</h3>
-                <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--amber-ghost)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  {conf.vehicle_type === 'Bike' ? <Zap size={20} color="var(--amber-core)" /> : <Car size={20} color="var(--amber-core)" />}
+            <GlassCard key={conf.vehicle_type} level={2} className="p-8 border border-white/5">
+              <div className="flex justify-between items-center mb-8">
+                <h3 className="text-2xl font-black text-white">{conf.vehicle_type}</h3>
+                <div className="w-12 h-12 rounded-2xl bg-amber-ghost flex items-center justify-center text-[var(--amber-core)]">
+                  {conf.vehicle_type === 'Bike' ? <Zap size={24} /> : <Car size={24} />}
                 </div>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '32px' }}>
-                <RateField label="Base Fare" value={current.base_rate} editing={isEditing} onChange={v => setForm(p => ({ ...p, base_rate: v }))} />
-                <RateField label="Per KM" value={current.per_km_rate} editing={isEditing} onChange={v => setForm(p => ({ ...p, per_km_rate: v }))} />
-                <RateField label="Per Min" value={current.per_min_rate} editing={isEditing} onChange={v => setForm(p => ({ ...p, per_min_rate: v }))} />
-                <RateField label="Surge Multiplier" value={current.surge_multiplier} editing={isEditing} onChange={v => setForm(p => ({ ...p, surge_multiplier: v }))} />
-                <RateField label="Commission (%)" value={current.commission_rate * 100} editing={isEditing} onChange={v => setForm(p => ({ ...p, commission_rate: v / 100 }))} suffix="%" />
+              <div className="flex flex-col gap-5 mb-10">
+                <RateField label="Base Connection" value={current.base_rate} editing={isEditing} onChange={v => setForm(p => ({ ...p, base_rate: v }))} />
+                <RateField label="Per KM Kinetic" value={current.per_km_rate} editing={isEditing} onChange={v => setForm(p => ({ ...p, per_km_rate: v }))} />
+                <RateField label="Per Min Temporal" value={current.per_min_rate} editing={isEditing} onChange={v => setForm(p => ({ ...p, per_min_rate: v }))} />
+                <RateField label="Surge Multiplier" value={current.surge_multiplier} editing={isEditing} onChange={v => setForm(p => ({ ...p, surge_multiplier: v }))} suffix="x" />
+                <RateField label="System Comm." value={(current.commission_rate * 100).toFixed(0)} editing={isEditing} onChange={v => setForm(p => ({ ...p, commission_rate: v / 100 }))} suffix="%" />
               </div>
 
-              <div style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '32px' }}>
-                <p className="label-caps" style={{ fontSize: '10px', marginBottom: '8px' }}>Price Estimator</p>
-                <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>10km / 20min ride:</div>
-                <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--amber-core)', marginTop: '4px' }}>PKR {samplePrice.toFixed(2)}</div>
+              <div className="p-6 bg-white/[0.02] rounded-2xl border border-white/5 mb-10">
+                <p className="label-caps text-[9px] mb-2 tracking-widest">Sample Simulation</p>
+                <div className="text-[11px] text-[var(--text-muted)] mb-1">10km / 20min journey</div>
+                <div className="text-2xl font-black text-[var(--amber-core)] font-mono">PKR {samplePrice.toFixed(2)}</div>
               </div>
 
               {isEditing ? (
-                <div style={{ display: 'flex', gap: '12px' }}>
-                  <Button block variant="ghost" onClick={() => setEditing(null)}>Cancel</Button>
-                  <Button block onClick={handleSave} disabled={loading}>{loading ? <Spinner /> : 'Save'}</Button>
+                <div className="grid grid-cols-2 gap-4">
+                  <Button variant="ghost" className="bg-white/5" onClick={() => setEditing(null)}>Cancel</Button>
+                  <Button onClick={handleSave} disabled={loading}>{loading ? <Spinner size={18} /> : 'Publish'}</Button>
                 </div>
               ) : (
-                <Button block variant="secondary" onClick={() => handleEdit(conf)}><Edit3 size={16} /> Edit Rates</Button>
+                <Button variant="secondary" className="w-full py-4 font-bold" onClick={() => handleEdit(conf)}>
+                  <Edit3 size={16} className="mr-2" /> Adjust Algorithm
+                </Button>
               )}
             </GlassCard>
           );
@@ -544,15 +600,18 @@ function FareTab({ configs, onAction }) {
 
 function RateField({ label, value, editing, onChange, suffix = 'PKR' }) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-      <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>{label}</span>
+    <div className="flex justify-between items-center py-2 border-b border-white/5">
+      <span className="text-xs text-[var(--text-secondary)] font-medium uppercase tracking-wider">{label}</span>
       {editing ? (
-        <input 
-          type="number" step="0.01" value={value} onChange={e => onChange(e.target.value)}
-          style={{ width: '80px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: 'white', padding: '4px 8px', fontSize: '14px', textAlign: 'right' }}
-        />
+        <div className="flex items-center gap-2">
+          <input 
+            type="number" step="0.01" value={value} onChange={e => onChange(e.target.value)}
+            className="w-20 bg-white/10 border border-white/20 rounded-lg text-white p-2 text-sm text-right outline-none focus:border-[var(--amber-core)]"
+          />
+          <span className="text-[10px] text-[var(--text-muted)] font-bold">{suffix}</span>
+        </div>
       ) : (
-        <span style={{ fontWeight: 600 }}>{value} {suffix}</span>
+        <span className="font-mono font-bold text-sm">{value} <span className="text-[10px] font-normal text-[var(--text-muted)]">{suffix}</span></span>
       )}
     </div>
   );
@@ -570,29 +629,31 @@ function VerificationTab({ queue, onAction }) {
 
   return (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
-      <GlassCard level={2} style={{ padding: '40px' }}>
-        <h3 style={{ fontSize: '1.5rem', marginBottom: '32px' }}>Vehicle Verification Queue</h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <GlassCard level={2} className="p-8 md:p-12">
+        <h3 className="text-2xl font-bold mb-10">Vehicle Verification Queue</h3>
+        <div className="flex flex-col gap-4">
           {queue.map(v => (
-            <div key={v.vehicle_id} className="glass-1" style={{ padding: '24px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-                <Car size={24} color="var(--amber-core)" />
+            <div key={v.vehicle_id} className="glass-1 p-6 md:p-8 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 border border-white/5">
+              <div className="flex items-center gap-6">
+                <div className="w-14 h-14 rounded-2xl bg-amber-ghost flex items-center justify-center text-[var(--amber-core)]">
+                  <Car size={28} />
+                </div>
                 <div>
-                  <div style={{ fontSize: '16px', fontWeight: 600 }}>{v.make} {v.model} ({v.license_plate})</div>
-                  <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Captain ID: #{v.driver_id} • Type: {v.vehicle_type}</div>
+                  <div className="text-lg font-bold text-white mb-1">{v.make} {v.model} <span className="text-[var(--text-muted)] font-mono text-sm">({v.license_plate})</span></div>
+                  <div className="text-xs text-[var(--text-muted)]">Captain ID: <span className="text-white font-mono">#{v.driver_id}</span> • Tier: <span className="text-[var(--amber-core)] font-bold">{v.vehicle_type}</span></div>
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: '16px' }}>
-                <button className="btn-secondary" onClick={() => handleVerify(v.vehicle_id, 'Rejected')} disabled={loading} style={{ color: '#EF4444' }}>Reject</button>
-                <button className="btn-primary" onClick={() => handleVerify(v.vehicle_id, 'Verified')} disabled={loading}>Approve</button>
+              <div className="flex gap-4 w-full sm:w-auto">
+                <Button variant="ghost" className="flex-1 sm:flex-initial text-red-500 bg-red-500/10 font-bold px-8" onClick={() => handleVerify(v.vehicle_id, 'Rejected')} disabled={loading}>Reject</Button>
+                <Button className="flex-1 sm:flex-initial font-bold px-8" onClick={() => handleVerify(v.vehicle_id, 'Verified')} disabled={loading}>Approve</Button>
               </div>
             </div>
           ))}
           {queue.length === 0 && (
             <EmptyState 
               icon={CheckCircle} 
-              title="All vehicles are verified!" 
-              subtitle="Great job! The queue is completely empty." 
+              title="Verification Complete" 
+              subtitle="The inspection queue is currently empty. All registered vehicles are processed." 
             />
           )}
         </div>
@@ -623,31 +684,31 @@ function AdminPayoutsTab() {
 
   return (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
-      <GlassCard level={2} style={{ padding: '40px' }}>
-        <h3 style={{ fontSize: '1.5rem', marginBottom: '32px' }}>Pending Payout Requests</h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <GlassCard level={2} className="p-8 md:p-12">
+        <h3 className="text-2xl font-bold mb-10">Pending Payout Requests</h3>
+        <div className="flex flex-col gap-4">
           {payouts.map(p => (
-            <div key={p.payout_id} className="glass-1" style={{ padding: '24px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-                <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'var(--amber-ghost)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <DollarSign size={24} color="var(--amber-core)" />
+            <div key={p.payout_id} className="glass-1 p-6 md:p-8 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 border border-white/5">
+              <div className="flex items-center gap-6">
+                <div className="w-14 h-14 rounded-2xl bg-amber-ghost flex items-center justify-center text-[var(--amber-core)]">
+                  <DollarSign size={28} />
                 </div>
                 <div>
-                  <div style={{ fontSize: '16px', fontWeight: 600 }}>PKR {parseFloat(p.amount).toLocaleString()}</div>
-                  <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Captain ID: #{p.user_id} • Requested: {new Date(p.request_date).toLocaleDateString()}</div>
+                  <div className="text-2xl font-black font-mono text-white mb-1">PKR {parseFloat(p.amount).toLocaleString()}</div>
+                  <div className="text-xs text-[var(--text-muted)]">Captain ID: <span className="text-white font-mono">#{p.user_id}</span> • Requested: <span className="text-white">{new Date(p.request_date).toLocaleDateString()}</span></div>
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: '16px' }}>
-                <button className="btn-secondary" style={{ color: '#EF4444' }} onClick={() => execute(() => walletService.updatePayoutStatus(p.payout_id, { status: 'Rejected' }), { onSuccess: fetchPayouts })}>Reject</button>
-                <button className="btn-primary" onClick={() => handleApprove(p.payout_id)}>Complete Transfer</button>
+              <div className="flex gap-4 w-full sm:w-auto">
+                <Button variant="ghost" className="flex-1 sm:flex-initial text-red-500 bg-red-500/10 font-bold px-8" onClick={() => execute(() => walletService.updatePayoutStatus(p.payout_id, { status: 'Rejected' }), { onSuccess: fetchPayouts })}>Reject</Button>
+                <Button className="flex-1 sm:flex-initial font-bold px-8" onClick={() => handleApprove(p.payout_id)}>Authorize Transfer</Button>
               </div>
             </div>
           ))}
           {payouts.length === 0 && (
             <EmptyState 
               icon={CreditCard} 
-              title="No pending payouts" 
-              subtitle="All captains have been paid! The treasury is up to date." 
+              title="Treasury Settled" 
+              subtitle="All payout requests have been processed. Systems are balanced." 
             />
           )}
         </div>
@@ -655,5 +716,3 @@ function AdminPayoutsTab() {
     </motion.div>
   );
 }
-
-import * as walletService from '../../services/walletService';

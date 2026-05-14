@@ -1,11 +1,10 @@
-// src/pages/rider/RiderDashboard.jsx
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Car, MapPin, Navigation, Clock, CreditCard, History, Settings, LogOut, 
   Search, Shield, Star, Wallet, ArrowRight, Zap, Bell, CheckCircle, X, Receipt, User
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import useAuthStore from '../../store/authStore';
 import useRideStore from '../../store/rideStore';
 import * as authService from '../../services/authService';
@@ -17,6 +16,7 @@ import toast from 'react-hot-toast';
 import AddressAutocomplete from '../../components/maps/AddressAutocomplete';
 import RideMap from '../../components/maps/RideMap';
 import ActiveRideTracker from '../../components/rides/ActiveRideTracker';
+import DashboardLayout from '../../components/layout/DashboardLayout';
 
 export default function RiderDashboard() {
   const [activeTab, setActiveTab] = useState('book');
@@ -26,6 +26,20 @@ export default function RiderDashboard() {
   const { activeRide, setActiveRide, clearRide } = useRideStore();
   const { loading: statsLoading, execute: execStats } = useApi();
   const { loading: rideLoading, execute: execRide } = useApi();
+  const { pathname } = useLocation();
+
+  // Sync activeTab with URL
+  useEffect(() => {
+    const segments = pathname.split('/');
+    const path = segments[segments.length - 1];
+    if (['book', 'rides', 'wallet', 'profile'].includes(path)) {
+      // Map URL paths to internal tab IDs
+      const tabMap = { 'book': 'book', 'rides': 'history', 'wallet': 'wallet', 'profile': 'settings' };
+      setActiveTab(tabMap[path] || 'book');
+    } else if (pathname === '/dashboard/rider') {
+      setActiveTab('book');
+    }
+  }, [pathname]);
 
   const fetchStats = useCallback(async () => {
     const res = await execStats(() => walletService.getBalance(), { showSuccessToast: false, showErrorToast: false });
@@ -37,12 +51,6 @@ export default function RiderDashboard() {
     if (res) setRideHistory(res.data.rides || []);
   }, [execRide]);
 
-  const checkActiveRide = useCallback(async () => {
-    const res = await rideService.getActiveRide().catch(() => null);
-    if (res?.data) setActiveRide(res.data);
-    else if (activeRide) clearRide();
-  }, [setActiveRide, clearRide, activeRide]);
-
   useEffect(() => {
     fetchStats();
     if (activeTab === 'history') fetchHistory();
@@ -53,57 +61,32 @@ export default function RiderDashboard() {
     const poll = async () => {
       const res = await rideService.getActiveRide().catch(() => null);
       if (res?.data) setActiveRide(res.data);
-      else setActiveRide(null); // Clear if no active ride
+      else setActiveRide(null); 
     };
     
-    poll(); // Initial check
+    poll();
     const interval = setInterval(poll, 8000);
     return () => clearInterval(interval);
   }, [setActiveRide]);
 
-  const handleLogout = async () => {
-    await authService.logout().catch(() => {});
-    clearAuth();
-    window.location.href = '/';
-  };
-
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-void)' }}>
-      <aside style={{ width: '280px', background: 'var(--bg-deep)', borderRight: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', padding: '40px 20px', position: 'fixed', height: '100vh', zIndex: 50 }}>
-        <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '60px', paddingLeft: '20px', textDecoration: 'none', color: 'inherit' }}>
-          <Zap size={22} color="var(--amber-core)" fill="var(--amber-core)" />
-          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.1rem', letterSpacing: '0.05em' }}>RIDEFLOW</span>
-        </Link>
-        <nav style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {[
-            { id: 'book', label: 'Book Ride', icon: Navigation },
-            { id: 'history', label: 'Ride History', icon: History },
-            { id: 'wallet', label: 'My Wallet', icon: Wallet },
-            { id: 'settings', label: 'Account', icon: Settings },
-          ].map(item => (
-            <button key={item.id} onClick={() => setActiveTab(item.id)} style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px 20px', borderRadius: '12px', border: 'none', cursor: 'pointer', textAlign: 'left', background: activeTab === item.id ? 'var(--amber-ghost)' : 'transparent', color: activeTab === item.id ? 'var(--amber-core)' : 'var(--text-muted)', transition: 'all 0.2s', fontWeight: activeTab === item.id ? 600 : 500 }}>
-              <item.icon size={20} />
-              <span style={{ fontSize: '14px' }}>{item.label}</span>
-            </button>
-          ))}
-        </nav>
-        <div style={{ marginTop: 'auto', padding: '20px' }}>
-          <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '14px' }}><LogOut size={18} /> Sign Out</button>
-        </div>
-      </aside>
-
-      <main style={{ flex: 1, marginLeft: '280px', padding: '40px 60px' }}>
-        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '48px' }}>
+    <DashboardLayout>
+      <div className="max-w-7xl mx-auto">
+        <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-12">
           <div>
-            <h1 style={{ fontSize: '2rem', marginBottom: '8px' }}>Hello, {user?.full_name?.split(' ')[0]}</h1>
-            <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>{activeRide ? 'Your journey is in progress' : 'Ready for your next premium journey?'}</p>
+            <h1 className="text-3xl md:text-4xl font-bold mb-2">Hello, {user?.full_name?.split(' ')[0]}</h1>
+            <p className="text-[var(--text-muted)] text-sm md:text-base">
+              {activeRide ? 'Your journey is in progress' : 'Ready for your next premium journey?'}
+            </p>
           </div>
-          <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-            <div className="glass-1" style={{ padding: '8px 16px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <Wallet size={16} color="var(--amber-core)" />
-              <span className="font-mono" style={{ fontWeight: 600 }}>${Number(balance || 0).toFixed(2)}</span>
+          <div className="flex w-full sm:w-auto gap-4 items-center">
+            <div className="glass-1 flex-1 sm:flex-initial px-6 py-3 rounded-2xl flex items-center gap-4 border border-white/5">
+              <Wallet size={18} className="text-[var(--amber-core)]" />
+              <span className="font-mono font-bold text-lg">PKR {Number(balance || 0).toFixed(2)}</span>
             </div>
-            <button style={{ width: '44px', height: '44px', borderRadius: '12px', background: 'var(--bg-glass)', border: '1px solid rgba(255,255,255,0.05)', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Bell size={20} /></button>
+            <button className="w-12 h-12 rounded-2xl bg-white/5 border border-white/5 text-[var(--text-primary)] flex items-center justify-center hover:bg-white/10 transition-colors">
+              <Bell size={22} />
+            </button>
           </div>
         </header>
 
@@ -113,8 +96,8 @@ export default function RiderDashboard() {
           {activeTab === 'wallet' && <WalletTab key="wallet" balance={balance} onRefresh={fetchStats} />}
           {activeTab === 'settings' && <AccountTab key="settings" user={user} />}
         </AnimatePresence>
-      </main>
-    </div>
+      </div>
+    </DashboardLayout>
   );
 }
 
@@ -128,8 +111,8 @@ function BookRideTab({ activeRide, onBookingSuccess }) {
   });
   const [estimation, setEstimation] = useState(null);
   const { loading, execute } = useApi();
-  const { setActiveRide, clearRide } = useRideStore();
-  const [selectingMapField, setSelectingMapField] = useState(null); // 'pickup' or 'dropoff'
+  const { setActiveRide } = useRideStore();
+  const [selectingMapField, setSelectingMapField] = useState(null);
 
   const handleEstimate = async () => {
     if (!form.pickupCoords || !form.destinationCoords) return;
@@ -178,14 +161,6 @@ function BookRideTab({ activeRide, onBookingSuccess }) {
     });
   };
 
-  const handleCancel = async () => {
-    if (!activeRide) return;
-    const res = await execute(() => rideService.cancelRide(activeRide.ride_id), {
-      successMessage: 'Ride cancelled',
-      onSuccess: () => clearRide()
-    });
-  };
-
   if (activeRide) {
     return (
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
@@ -196,122 +171,136 @@ function BookRideTab({ activeRide, onBookingSuccess }) {
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '32px' }}>
-        <GlassCard level={2} style={{ padding: '40px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '32px' }}>
-            <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'var(--amber-ghost)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--amber-core)' }}><Navigation size={20} /></div>
-            <h3 style={{ fontSize: '1.25rem' }}>Secure Your Ride</h3>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                <label className="label-caps">Pickup Location</label>
-                <button 
-                  onClick={() => setSelectingMapField(selectingMapField === 'pickup' ? null : 'pickup')}
-                  style={{ fontSize: '11px', color: selectingMapField === 'pickup' ? 'var(--amber-core)' : 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}
-                >
-                  {selectingMapField === 'pickup' ? 'SELECTING ON MAP...' : 'SELECT ON MAP'}
-                </button>
-              </div>
-              <AddressAutocomplete 
-                placeholder="Where should we pick you up?"
-                value={form.pickup}
-                onSelect={(place) => setForm(p => ({ 
-                  ...p, 
-                  pickup: place.formattedAddress, 
-                  pickupCoords: { lat: place.lat, lng: place.lng } 
-                }))}
-              />
+      <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-8">
+        <GlassCard level={2} className="p-6 md:p-10">
+          <div className="flex items-center gap-4 mb-8">
+            <div className="w-12 h-12 rounded-xl bg-amber-ghost flex items-center justify-center text-[var(--amber-core)]">
+              <Navigation size={24} />
             </div>
-
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                <label className="label-caps">Destination</label>
-                <button 
-                  onClick={() => setSelectingMapField(selectingMapField === 'dropoff' ? null : 'dropoff')}
-                  style={{ fontSize: '11px', color: selectingMapField === 'dropoff' ? 'var(--amber-core)' : 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}
-                >
-                  {selectingMapField === 'dropoff' ? 'SELECTING ON MAP...' : 'SELECT ON MAP'}
-                </button>
+            <h3 className="text-xl md:text-2xl font-semibold">Secure Your Ride</h3>
+          </div>
+          
+          <div className="flex flex-col gap-8">
+            <div className="space-y-4">
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <label className="label-caps">Pickup Location</label>
+                  <button 
+                    onClick={() => setSelectingMapField(selectingMapField === 'pickup' ? null : 'pickup')}
+                    className={`text-[10px] font-bold transition-colors ${selectingMapField === 'pickup' ? 'text-[var(--amber-core)]' : 'text-[var(--text-muted)]'}`}
+                  >
+                    {selectingMapField === 'pickup' ? 'SELECTING ON MAP...' : 'SELECT ON MAP'}
+                  </button>
+                </div>
+                <AddressAutocomplete 
+                  placeholder="Where should we pick you up?"
+                  value={form.pickup}
+                  onSelect={(place) => setForm(p => ({ 
+                    ...p, 
+                    pickup: place.formattedAddress, 
+                    pickupCoords: { lat: place.lat, lng: place.lng } 
+                  }))}
+                />
               </div>
-              <AddressAutocomplete 
-                placeholder="Where are you headed?"
-                value={form.destination}
-                onSelect={(place) => setForm(p => ({ 
-                  ...p, 
-                  destination: place.formattedAddress, 
-                  destinationCoords: { lat: place.lat, lng: place.lng } 
-                }))}
-              />
+
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <label className="label-caps">Destination</label>
+                  <button 
+                    onClick={() => setSelectingMapField(selectingMapField === 'dropoff' ? null : 'dropoff')}
+                    className={`text-[10px] font-bold transition-colors ${selectingMapField === 'dropoff' ? 'text-[var(--amber-core)]' : 'text-[var(--text-muted)]'}`}
+                  >
+                    {selectingMapField === 'dropoff' ? 'SELECTING ON MAP...' : 'SELECT ON MAP'}
+                  </button>
+                </div>
+                <AddressAutocomplete 
+                  placeholder="Where are you headed?"
+                  value={form.destination}
+                  onSelect={(place) => setForm(p => ({ 
+                    ...p, 
+                    destination: place.formattedAddress, 
+                    destinationCoords: { lat: place.lat, lng: place.lng } 
+                  }))}
+                />
+              </div>
             </div>
             
-            <div style={{ marginTop: '8px' }}>
-              <label className="label-caps" style={{ display: 'block', marginBottom: '16px' }}>Select Experience</label>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
+            <div>
+              <label className="label-caps block mb-4">Select Experience</label>
+              <div className="grid grid-cols-3 gap-3 md:gap-4">
                 {['Standard', 'Premium', 'Executive'].map(type => (
-                  <div key={type} className="glass-1" onClick={() => setForm(p => ({ ...p, vehicle_type: type }))} style={{ padding: '20px', textAlign: 'center', cursor: 'pointer', border: form.vehicle_type === type ? '1px solid var(--amber-core)' : '1px solid rgba(255,255,255,0.05)', background: form.vehicle_type === type ? 'var(--amber-ghost)' : 'transparent' }}>
-                    <Car size={24} color={form.vehicle_type === type ? 'var(--amber-core)' : 'var(--text-muted)'} style={{ marginBottom: '12px' }} />
-                    <div style={{ fontSize: '13px', fontWeight: 600, color: form.vehicle_type === type ? 'var(--amber-core)' : 'var(--text-primary)' }}>{type}</div>
+                  <div 
+                    key={type} 
+                    onClick={() => setForm(p => ({ ...p, vehicle_type: type }))} 
+                    className={`p-4 md:p-6 rounded-2xl text-center cursor-pointer transition-all border ${
+                      form.vehicle_type === type 
+                        ? 'border-[var(--amber-core)] bg-amber-ghost/30 shadow-[0_0_15px_rgba(245,166,35,0.1)]' 
+                        : 'border-white/5 hover:border-white/10'
+                    }`}
+                  >
+                    <Car size={24} className={`mx-auto mb-3 ${form.vehicle_type === type ? 'text-[var(--amber-core)]' : 'text-[var(--text-muted)]'}`} />
+                    <div className={`text-xs md:text-sm font-bold ${form.vehicle_type === type ? 'text-[var(--amber-core)]' : 'text-[var(--text-primary)]'}`}>{type}</div>
                   </div>
                 ))}
               </div>
             </div>
 
             {estimation && (
-              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="glass-1" style={{ padding: '20px', border: '1px solid var(--amber-ghost)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                  <span style={{ color: 'var(--text-muted)' }}>Estimated Fare</span>
-                  <span className="font-mono" style={{ fontWeight: 700, color: 'var(--amber-core)' }}>
-                    ${Number(estimation.estimated_fare).toFixed(2)}
-                    {estimation.is_surge && <Zap size={14} style={{ display: 'inline', marginLeft: '4px' }} />}
+              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="glass-1 p-5 rounded-2xl border border-[var(--amber-ghost)] bg-amber-ghost/5">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-[var(--text-muted)] text-sm">Estimated Fare</span>
+                  <span className="font-mono font-bold text-lg text-[var(--amber-core)]">
+                    PKR {Number(estimation.estimated_fare).toFixed(2)}
+                    {estimation.is_surge && <Zap size={14} className="inline ml-1" />}
                   </span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
-                  <span style={{ color: 'var(--text-muted)' }}>Distance / Time</span>
-                  <span>{estimation.distance_km} km / {estimation.duration_text}</span>
+                <div className="flex justify-between text-[11px] md:text-xs">
+                  <span className="text-[var(--text-muted)]">Distance / Time</span>
+                  <span className="font-medium">{estimation.distance_km} km / {estimation.duration_text}</span>
                 </div>
               </motion.div>
             )}
 
-            <button className="btn-primary" onClick={handleBook} disabled={loading || !form.pickupCoords} style={{ width: '100%', marginTop: '16px', padding: '18px' }}>
-              {loading ? <Spinner size={18} /> : <>Book Now <ArrowRight size={18} /></>}
-            </button>
+            <Button className="w-full py-5 text-lg font-bold" onClick={handleBook} disabled={loading || !form.pickupCoords}>
+              {loading ? <Spinner size={20} /> : <>Book Premium Ride <ArrowRight size={20} className="ml-2" /></>}
+            </Button>
           </div>
         </GlassCard>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-          <div style={{ flex: 1, borderRadius: '24px', overflow: 'hidden', border: selectingMapField ? '2px solid var(--amber-core)' : '1px solid rgba(255,255,255,0.05)', minHeight: '400px' }}>
-            <RideMap 
-              pickup={form.pickupCoords}
-              dropoff={form.destinationCoords}
-              onMapClick={(latLng) => {
-                if (selectingMapField === 'pickup') {
-                  setForm(p => ({ ...p, pickup: `${latLng.lat.toFixed(4)}, ${latLng.lng.toFixed(4)}`, pickupCoords: latLng }));
-                  setSelectingMapField(null);
-                } else if (selectingMapField === 'dropoff') {
-                  setForm(p => ({ ...p, destination: `${latLng.lat.toFixed(4)}, ${latLng.lng.toFixed(4)}`, destinationCoords: latLng }));
-                  setSelectingMapField(null);
-                }
-              }}
-            />
-          </div>
+
+        <div className="h-[300px] lg:h-auto min-h-[400px] rounded-[32px] overflow-hidden border border-white/5 relative">
+          {selectingMapField && (
+            <div className="absolute top-4 left-4 right-4 z-10 bg-[var(--amber-core)] text-[#050508] px-4 py-2 rounded-xl text-xs font-bold text-center shadow-xl animate-bounce">
+              Tap on map to set {selectingMapField}
+            </div>
+          )}
+          <RideMap 
+            pickup={form.pickupCoords}
+            dropoff={form.destinationCoords}
+            onMapClick={(latLng) => {
+              if (selectingMapField === 'pickup') {
+                setForm(p => ({ ...p, pickup: `${latLng.lat.toFixed(4)}, ${latLng.lng.toFixed(4)}`, pickupCoords: latLng }));
+                setSelectingMapField(null);
+              } else if (selectingMapField === 'dropoff') {
+                setForm(p => ({ ...p, destination: `${latLng.lat.toFixed(4)}, ${latLng.lng.toFixed(4)}`, destinationCoords: latLng }));
+                setSelectingMapField(null);
+              }
+            }}
+          />
         </div>
       </div>
     </motion.div>
   );
 }
 
-import * as ratingService from '../../services/ratingService';
-import { RatingStars } from '../../components/ui';
-
 function RideHistoryTab({ history, loading, onRefresh }) {
   const [selectedRide, setSelectedRide] = useState(null);
 
   return (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
-      <GlassCard level={2} style={{ padding: '40px' }}>
-        <h3 style={{ fontSize: '1.5rem', marginBottom: '32px' }}>Recent Journeys</h3>
-        {loading ? <Spinner /> : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <GlassCard level={2} className="p-6 md:p-10">
+        <h3 className="text-2xl font-bold mb-8">Recent Journeys</h3>
+        {loading ? <div className="py-20 text-center"><Spinner /></div> : (
+          <div className="flex flex-col gap-4">
             {history.map(ride => (
               <RideHistoryItem key={ride.ride_id} ride={ride} onRate={() => setSelectedRide(ride)} />
             ))}
@@ -346,27 +335,31 @@ function RideHistoryItem({ ride, onRate }) {
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className="glass-1" style={{ borderRadius: '16px', overflow: 'hidden' }}>
+    <div className="glass-1 rounded-2xl overflow-hidden border border-white/5">
       <div 
         onClick={() => setExpanded(!expanded)}
-        style={{ padding: '20px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
+        className="p-5 md:p-8 flex flex-col md:flex-row md:items-center justify-between cursor-pointer gap-6"
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-          <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(255,255,255,0.03)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Car size={20} color={ride.status === 'Completed' ? 'var(--amber-core)' : 'var(--text-muted)'} />
+        <div className="flex items-center gap-6">
+          <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center flex-shrink-0">
+            <Car size={22} className={ride.status === 'Completed' ? 'text-[var(--amber-core)]' : 'text-[var(--text-muted)]'} />
           </div>
           <div>
-            <div style={{ fontSize: '15px', fontWeight: 600, marginBottom: '4px' }}>{ride.pickup_location.split(',')[0]} → {ride.dropoff_location?.split(',')[0] || 'Unknown'}</div>
-            <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{new Date(ride.request_time).toLocaleDateString()} • {ride.vehicle_type}</div>
+            <div className="text-base md:text-lg font-bold mb-1 truncate max-w-[200px] md:max-w-xs">
+              {ride.pickup_location.split(',')[0]} → {ride.dropoff_location?.split(',')[0] || '...'}
+            </div>
+            <div className="text-xs md:text-sm text-[var(--text-muted)]">
+              {new Date(ride.request_time).toLocaleDateString()} • {ride.vehicle_type}
+            </div>
           </div>
         </div>
-        <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: '20px' }}>
-          <div style={{ textAlign: 'right' }}>
-            <div className="font-mono" style={{ fontWeight: 600, marginBottom: '4px' }}>PKR {parseFloat(ride.fare || 0).toFixed(2)}</div>
+        <div className="flex items-center justify-between md:justify-end gap-8">
+          <div className="text-right">
+            <div className="font-mono font-bold text-lg mb-1">PKR {parseFloat(ride.fare || 0).toFixed(2)}</div>
             <Badge status={ride.status === 'Completed' ? 'Active' : 'Error'}>{ride.status}</Badge>
           </div>
-          <motion.div animate={{ rotate: expanded ? 180 : 0 }}>
-            <ArrowRight size={18} style={{ transform: 'rotate(90deg)', opacity: 0.3 }} />
+          <motion.div animate={{ rotate: expanded ? 180 : 0 }} className="hidden md:block">
+            <ArrowRight size={18} className="rotate-90 opacity-30" />
           </motion.div>
         </div>
       </div>
@@ -377,41 +370,44 @@ function RideHistoryItem({ ride, onRate }) {
             initial={{ height: 0, opacity: 0 }} 
             animate={{ height: 'auto', opacity: 1 }} 
             exit={{ height: 0, opacity: 0 }}
-            style={{ borderTop: '1px solid rgba(255,255,255,0.05)', background: 'rgba(0,0,0,0.1)' }}
+            className="border-t border-white/5 bg-black/20"
           >
-            <div style={{ padding: '24px 32px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px' }}>
+            <div className="p-6 md:p-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
-                  <p className="label-caps" style={{ fontSize: '10px', marginBottom: '12px' }}>Trip Details</p>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px' }}>
-                    <div style={{ display: 'flex', gap: '8px' }}><Clock size={14} color="var(--text-muted)" /> <span>Requested: {new Date(ride.request_time).toLocaleTimeString()}</span></div>
-                    {ride.start_time && <div style={{ display: 'flex', gap: '8px' }}><Navigation size={14} color="var(--text-muted)" /> <span>Started: {new Date(ride.start_time).toLocaleTimeString()}</span></div>}
-                    {ride.end_time && <div style={{ display: 'flex', gap: '8px' }}><CheckCircle size={14} color="var(--text-muted)" /> <span>Ended: {new Date(ride.end_time).toLocaleTimeString()}</span></div>}
+                  <p className="label-caps text-[10px] mb-4">Trip Timeline</p>
+                  <div className="space-y-3 text-sm">
+                    <div className="flex items-center gap-3 text-[var(--text-muted)]">
+                      <Clock size={14} /> <span>Requested: {new Date(ride.request_time).toLocaleTimeString()}</span>
+                    </div>
+                    {ride.start_time && (
+                      <div className="flex items-center gap-3 text-[var(--text-muted)]">
+                        <Navigation size={14} /> <span>Started: {new Date(ride.start_time).toLocaleTimeString()}</span>
+                      </div>
+                    )}
+                    {ride.end_time && (
+                      <div className="flex items-center gap-3 text-[var(--text-primary)] font-medium">
+                        <CheckCircle size={14} /> <span>Ended: {new Date(ride.end_time).toLocaleTimeString()}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div>
-                  <p className="label-caps" style={{ fontSize: '10px', marginBottom: '12px' }}>Rating & Feedback</p>
+                  <p className="label-caps text-[10px] mb-4">Rating & Feedback</p>
                   {ride.rider_has_rated ? (
-                    <div style={{ padding: '12px', background: 'rgba(255,255,255,0.03)', borderRadius: '10px' }}>
-                      <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px' }}>Your Rating</p>
+                    <div className="p-4 bg-white/5 rounded-xl border border-white/5">
+                      <p className="text-[10px] text-[var(--text-muted)] mb-2 uppercase tracking-widest">Your Rating</p>
                       <RatingStars value={ride.rider_rating_score || 5} size="sm" />
-                      {ride.rider_rating_comment && <p style={{ fontSize: '12px', marginTop: '8px', fontStyle: 'italic' }}>"{ride.rider_rating_comment}"</p>}
+                      {ride.rider_rating_comment && <p className="text-sm mt-3 italic text-[var(--text-secondary)]">"{ride.rider_rating_comment}"</p>}
                     </div>
                   ) : (
                     ride.status === 'Completed' && ride.payment_status === 'Paid' ? (
-                      <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); onRate(); }} style={{ color: 'var(--amber-core)', background: 'var(--amber-ghost)', width: '100%' }}>
+                      <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); onRate(); }} className="w-full text-[var(--amber-core)] bg-amber-ghost">
                         Rate Your Experience
                       </Button>
                     ) : (
-                      <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Rating unavailable</p>
+                      <p className="text-sm text-[var(--text-muted)]">Rating unavailable</p>
                     )
-                  )}
-                  
-                  {ride.driver_has_rated && (
-                    <div style={{ marginTop: '16px', padding: '12px', background: 'rgba(255,191,0,0.05)', borderRadius: '10px', border: '1px solid rgba(255,191,0,0.1)' }}>
-                      <p style={{ fontSize: '11px', color: 'var(--amber-core)', marginBottom: '4px' }}>Rating Received</p>
-                      <RatingStars value={ride.driver_rating_score || 5} size="sm" />
-                    </div>
                   )}
                 </div>
               </div>
@@ -446,38 +442,37 @@ function RatingModal({ ride, onClose, onSuccess }) {
   };
 
   return (
-    <motion.div 
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}
-    >
-      <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} style={{ width: '100%', maxWidth: '440px' }}>
-        <GlassCard level={3} style={{ padding: '40px', textAlign: 'center' }}>
-          <button onClick={onClose} style={{ position: 'absolute', top: '20px', right: '20px', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={20} /></button>
-          
-          <div style={{ width: '64px', height: '64px', borderRadius: '20px', background: 'var(--amber-ghost)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--amber-core)', margin: '0 auto 24px' }}>
-            <Star size={32} />
-          </div>
-          
-          <h3 style={{ fontSize: '1.5rem', marginBottom: '8px' }}>Rate Your Trip</h3>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '32px' }}>How was your ride to {ride.dropoff_location?.split(',')[0]}?</p>
-          
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
-            <RatingStars mode="input" size="lg" value={score} onChange={setScore} />
-          </div>
-          
-          <textarea 
-            placeholder="Share your experience..."
-            value={comment}
-            onChange={e => setComment(e.target.value)}
-            style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '16px', color: 'white', height: '100px', resize: 'none', marginBottom: '32px' }}
-          />
-          
-          <Button block size="lg" onClick={handleSubmit} disabled={loading}>
-            {loading ? <Spinner size={20} /> : 'Submit Review'}
-          </Button>
-        </GlassCard>
+    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-6">
+      <motion.div 
+        initial={{ y: '100%' }} 
+        animate={{ y: 0 }} 
+        className="w-full max-w-lg bg-[var(--bg-deep)] rounded-t-[32px] sm:rounded-[32px] border-t sm:border border-white/10 p-8 md:p-12 relative"
+      >
+        <button onClick={onClose} className="absolute top-6 right-6 text-[var(--text-muted)]"><X size={24} /></button>
+        
+        <div className="w-16 h-16 rounded-2xl bg-amber-ghost flex items-center justify-center text-[var(--amber-core)] mx-auto mb-6">
+          <Star size={32} />
+        </div>
+        
+        <h3 className="text-2xl font-bold text-center mb-2">Rate Your Trip</h3>
+        <p className="text-[var(--text-muted)] text-center text-sm mb-10">How was your ride to {ride.dropoff_location?.split(',')[0]}?</p>
+        
+        <div className="flex justify-center mb-8">
+          <RatingStars mode="input" size="lg" value={score} onChange={setScore} />
+        </div>
+        
+        <textarea 
+          placeholder="Share your experience..."
+          value={comment}
+          onChange={e => setComment(e.target.value)}
+          className="w-full bg-white/5 border border-white/10 rounded-2xl p-5 text-white text-sm h-32 resize-none mb-8 focus:border-[var(--amber-core)] outline-none transition-colors"
+        />
+        
+        <Button className="w-full py-5 text-lg font-bold" onClick={handleSubmit} disabled={loading}>
+          {loading ? <Spinner size={20} /> : 'Submit Review'}
+        </Button>
       </motion.div>
-    </motion.div>
+    </div>
   );
 }
 
@@ -498,21 +493,23 @@ function WalletTab({ balance, onRefresh }) {
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: '32px' }}>
-        <GlassCard level={2} style={{ padding: '40px' }}>
-          <h3 style={{ fontSize: '1.25rem', marginBottom: '24px' }}>Balance Details</h3>
-          <div style={{ background: 'var(--amber-ghost)', padding: '32px', borderRadius: '20px', textAlign: 'center', marginBottom: '32px' }}>
-            <p className="label-caps" style={{ color: 'var(--amber-core)', marginBottom: '8px' }}>Available Credit</p>
-            <h2 style={{ fontSize: '3rem', color: 'var(--amber-core)' }}>PKR {Number(balance || 0).toFixed(2)}</h2>
+      <div className="grid grid-cols-1 lg:grid-cols-[0.8fr_1.2fr] gap-8">
+        <GlassCard level={2} className="p-8 md:p-12">
+          <h3 className="text-xl font-bold mb-8">Balance Details</h3>
+          <div className="bg-amber-ghost/20 p-10 rounded-[32px] text-center mb-10 border border-amber-ghost/10">
+            <p className="label-caps text-[var(--amber-core)] mb-4">Available Credit</p>
+            <h2 className="text-5xl md:text-6xl font-black text-[var(--amber-core)]">PKR {Number(balance || 0).toFixed(2)}</h2>
           </div>
-          <div style={{ display: 'flex', gap: '12px' }}>
-            <Input placeholder="Amount" type="number" value={amount} onChange={e => setAmount(e.target.value)} style={{ flex: 1 }} />
-            <button className="btn-primary" onClick={handleTopUp} disabled={loading} style={{ padding: '0 32px' }}>{loading ? <Spinner /> : 'Top Up'}</button>
+          <div className="space-y-4">
+            <Input placeholder="Amount to Top Up" type="number" value={amount} onChange={e => setAmount(e.target.value)} className="text-center text-lg" />
+            <Button className="w-full py-4 font-bold" onClick={handleTopUp} disabled={loading}>
+              {loading ? <Spinner /> : 'Recharge Wallet'}
+            </Button>
           </div>
         </GlassCard>
 
-        <GlassCard level={2} style={{ padding: '40px' }}>
-          <h3 style={{ fontSize: '1.25rem', marginBottom: '32px' }}>Transaction History</h3>
+        <GlassCard level={2} className="p-8 md:p-12">
+          <h3 className="text-xl font-bold mb-8">Transaction History</h3>
           <TransactionsList />
         </GlassCard>
       </div>
@@ -529,21 +526,21 @@ function TransactionsList() {
       .then(res => res && setTxns(res.data || []));
   }, []);
 
-  if (loading && txns.length === 0) return <div style={{ textAlign: 'center', padding: '20px' }}><Spinner /></div>;
+  if (loading && txns.length === 0) return <div className="py-20 text-center"><Spinner /></div>;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+    <div className="flex flex-col gap-4">
       {txns.map(t => (
-        <div key={t.transaction_id} className="glass-1" style={{ padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div key={t.transaction_id} className="glass-1 p-5 rounded-2xl flex justify-between items-center border border-white/5">
           <div>
-            <div style={{ fontSize: '14px', fontWeight: 600 }}>{t.transaction_type}</div>
-            <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{new Date(t.transaction_date).toLocaleString()}</div>
+            <div className="text-sm font-bold mb-1">{t.transaction_type}</div>
+            <div className="text-[10px] text-[var(--text-muted)]">{new Date(t.transaction_date).toLocaleString()}</div>
           </div>
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontWeight: 700, color: t.transaction_type === 'Credit' ? '#22C55E' : '#EF4444' }}>
+          <div className="text-right">
+            <div className={`font-mono font-bold text-lg ${t.transaction_type === 'Credit' ? 'text-green-500' : 'text-red-500'}`}>
               {t.transaction_type === 'Credit' ? '+' : '-'}PKR {parseFloat(t.amount).toFixed(2)}
             </div>
-            <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{t.payment_method || 'Wallet'}</div>
+            <div className="text-[10px] text-[var(--text-muted)]">{t.payment_method || 'Wallet'}</div>
           </div>
         </div>
       ))}
@@ -558,25 +555,16 @@ function TransactionsList() {
   );
 }
 
-import * as uploadService from '../../services/uploadService';
-
 function AccountTab({ user }) {
-  const [activeSubTab, setActiveSubTab] = useState('personal'); // 'personal' | 'security'
+  const [activeSubTab, setActiveSubTab] = useState('personal');
   const [profileForm, setProfileForm] = useState({ full_name: user?.full_name || '', phone: user?.phone || '' });
   const [passForm, setPassForm] = useState({ current_password: '', new_password: '', confirm_password: '' });
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [showPass, setShowPass] = useState(false);
   const { loading, execute } = useApi();
   const { clearAuth } = useAuthStore();
 
   const isFormChanged = profileForm.full_name !== user?.full_name || profileForm.phone !== user?.phone;
-
-  // Monitor upload progress globally
-  useEffect(() => {
-    window.onUploadProgress = (p) => setProgress(p);
-    return () => { window.onUploadProgress = null; };
-  }, []);
 
   const handlePhotoChange = async (e) => {
     const file = e.target.files[0];
@@ -622,67 +610,77 @@ function AccountTab({ user }) {
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: '40px' }}>
-        {/* Sidebar Navigation */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <button onClick={() => setActiveSubTab('personal')} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px 20px', borderRadius: '12px', border: 'none', background: activeSubTab === 'personal' ? 'var(--amber-ghost)' : 'transparent', color: activeSubTab === 'personal' ? 'var(--amber-core)' : 'var(--text-muted)', cursor: 'pointer', textAlign: 'left', fontWeight: 600 }}>
+      <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-8">
+        <div className="flex md:flex-col gap-2 overflow-x-auto pb-4 md:pb-0 scrollbar-hide">
+          <button 
+            onClick={() => setActiveSubTab('personal')} 
+            className={`flex items-center gap-3 px-6 py-4 rounded-xl font-bold whitespace-nowrap transition-all ${
+              activeSubTab === 'personal' ? 'bg-amber-ghost text-[var(--amber-core)]' : 'text-[var(--text-muted)] hover:text-white'
+            }`}
+          >
             <User size={18} /> Personal Info
           </button>
-          <button onClick={() => setActiveSubTab('security')} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px 20px', borderRadius: '12px', border: 'none', background: activeSubTab === 'security' ? 'var(--amber-ghost)' : 'transparent', color: activeSubTab === 'security' ? 'var(--amber-core)' : 'var(--text-muted)', cursor: 'pointer', textAlign: 'left', fontWeight: 600 }}>
-            <Shield size={18} /> Security & Passwords
+          <button 
+            onClick={() => setActiveSubTab('security')} 
+            className={`flex items-center gap-3 px-6 py-4 rounded-xl font-bold whitespace-nowrap transition-all ${
+              activeSubTab === 'security' ? 'bg-amber-ghost text-[var(--amber-core)]' : 'text-[var(--text-muted)] hover:text-white'
+            }`}
+          >
+            <Shield size={18} /> Security
           </button>
         </div>
 
-        {/* Content Area */}
-        <GlassCard level={2} style={{ padding: '48px' }}>
+        <GlassCard level={2} className="p-8 md:p-12">
           {activeSubTab === 'personal' ? (
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '32px', marginBottom: '48px' }}>
-                <div style={{ position: 'relative', width: '100px', height: '100px' }}>
-                  <div style={{ width: '100px', height: '100px', borderRadius: '30px', overflow: 'hidden', background: 'var(--bg-glass)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div className="flex flex-col sm:flex-row items-center gap-8 mb-12">
+                <div className="relative w-28 h-28">
+                  <div className="w-28 h-28 rounded-[32px] overflow-hidden bg-white/5 border border-white/10 flex items-center justify-center">
                     {user?.profile_photo ? (
-                      <img src={user.profile_photo} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <img src={user.profile_photo} alt="Profile" className="w-full h-full object-cover" />
                     ) : (
-                      <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--amber-core)' }}>{user?.full_name?.charAt(0)}</div>
+                      <div className="text-4xl font-black text-[var(--amber-core)]">{user?.full_name?.charAt(0)}</div>
                     )}
                   </div>
-                  <label style={{ position: 'absolute', inset: 0, borderRadius: '30px', background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', opacity: uploading ? 1 : 0, transition: 'opacity 0.2s' }} onMouseEnter={e => e.currentTarget.style.opacity = 1} onMouseLeave={e => !uploading && (e.currentTarget.style.opacity = 0)}>
-                    <Car size={24} color="white" />
+                  <label className="absolute inset-0 rounded-[32px] bg-black/60 opacity-0 hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity">
+                    <Car size={24} className="text-white" />
                     <input type="file" hidden onChange={handlePhotoChange} accept="image/*" disabled={uploading} />
                   </label>
                   {uploading && (
-                    <div style={{ position: 'absolute', bottom: '-10px', left: 0, right: 0, height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px', overflow: 'hidden' }}>
-                      <motion.div animate={{ width: `${progress}%` }} style={{ height: '100%', background: 'var(--amber-core)' }} />
+                    <div className="absolute -bottom-4 left-0 right-0 h-1 bg-white/10 rounded-full overflow-hidden">
+                      <motion.div animate={{ width: `${progress}%` }} className="h-full bg-[var(--amber-core)]" />
                     </div>
                   )}
                 </div>
-                <div>
-                  <h3 style={{ fontSize: '1.25rem', marginBottom: '4px' }}>{user?.full_name}</h3>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>Rider ID: #{user?.userId?.toString().slice(-6)} • Member since {new Date(user?.registration_date).toLocaleDateString()}</p>
+                <div className="text-center sm:text-left">
+                  <h3 className="text-2xl font-bold mb-1">{user?.full_name}</h3>
+                  <p className="text-[var(--text-muted)] text-sm">
+                    Rider ID: #{user?.userId?.toString().slice(-6)} • Since {new Date(user?.registration_date).getFullYear()}
+                  </p>
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '40px' }}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-10">
                 <Input label="Full Name" value={profileForm.full_name} onChange={e => setProfileForm(p => ({ ...p, full_name: e.target.value }))} />
-                <Input label="Email Address" value={user?.email} disabled style={{ opacity: 0.6 }} />
-                <Input label="Phone Number" value={profileForm.phone} onChange={e => setProfileForm(p => ({ ...p, phone: e.target.value }))} placeholder="+92 XXX XXXXXXX" />
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <label className="label-caps" style={{ fontSize: '10px' }}>Account Status</label>
-                  <div style={{ padding: '14px', borderRadius: '12px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                <Input label="Email Address" value={user?.email} disabled className="opacity-50" />
+                <Input label="Phone Number" value={profileForm.phone} onChange={e => setProfileForm(p => ({ ...p, phone: e.target.value }))} />
+                <div>
+                  <label className="label-caps mb-2 block">Account Status</label>
+                  <div className="px-4 py-3 rounded-xl bg-white/5 border border-white/5">
                     <Badge status={user?.account_status === 'Active' ? 'Active' : 'Error'}>{user?.account_status}</Badge>
                   </div>
                 </div>
               </div>
 
-              <Button onClick={handleUpdateProfile} disabled={loading || !isFormChanged} block>
-                {loading ? <Spinner /> : 'Save Changes'}
+              <Button onClick={handleUpdateProfile} disabled={loading || !isFormChanged} className="w-full py-4">
+                {loading ? <Spinner /> : 'Save Profile Changes'}
               </Button>
             </div>
           ) : (
             <form onSubmit={handleChangePassword}>
-              <h3 style={{ fontSize: '1.25rem', marginBottom: '32px' }}>Update Security Credentials</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', marginBottom: '40px' }}>
-                <div style={{ position: 'relative' }}>
+              <h3 className="text-2xl font-bold mb-10">Update Security Credentials</h3>
+              <div className="space-y-6 mb-10">
+                <div className="relative">
                   <Input 
                     type={showPass ? 'text' : 'password'} 
                     label="Current Password" 
@@ -690,8 +688,8 @@ function AccountTab({ user }) {
                     onChange={e => setPassForm(p => ({ ...p, current_password: e.target.value }))}
                     required 
                   />
-                  <button type="button" onClick={() => setShowPass(!showPass)} style={{ position: 'absolute', right: '16px', top: '40px', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
-                    {showPass ? <X size={16} /> : <Zap size={16} />}
+                  <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-4 top-10 text-[var(--text-muted)]">
+                    <Zap size={18} />
                   </button>
                 </div>
 
@@ -703,15 +701,6 @@ function AccountTab({ user }) {
                   required 
                 />
                 
-                {passForm.new_password && (
-                  <div style={{ height: '4px', background: 'rgba(255,255,255,0.05)', borderRadius: '2px', marginTop: '-12px' }}>
-                    <motion.div 
-                      animate={{ width: passForm.new_password.length > 8 ? '100%' : '50%', background: passForm.new_password.length > 8 ? '#22C55E' : 'var(--amber-core)' }} 
-                      style={{ height: '100%', borderRadius: '2px' }} 
-                    />
-                  </div>
-                )}
-
                 <Input 
                   type="password" 
                   label="Confirm New Password" 
@@ -721,7 +710,7 @@ function AccountTab({ user }) {
                 />
               </div>
 
-              <Button type="submit" disabled={loading} block variant="secondary">
+              <Button type="submit" disabled={loading} className="w-full py-4" variant="secondary">
                 {loading ? <Spinner /> : 'Update Password & Re-login'}
               </Button>
             </form>
@@ -731,4 +720,3 @@ function AccountTab({ user }) {
     </motion.div>
   );
 }
-

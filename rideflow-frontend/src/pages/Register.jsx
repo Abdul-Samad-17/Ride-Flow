@@ -92,8 +92,8 @@ export default function Register() {
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-void)' }}>
-      {/* Left Panel */}
-      <div style={{ flex: '1', position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '64px', background: '#050508' }}>
+      {/* Left Panel - Hidden on Mobile */}
+      <div className="hidden lg:flex" style={{ flex: '0.4', position: 'relative', overflow: 'hidden', alignItems: 'center', justifyContent: 'center', padding: '64px', background: '#050508' }}>
         <img src="https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=1200&q=80" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.5 }} />
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(5,5,8,0.9) 0%, transparent 60%)' }} />
         <div style={{ position: 'relative', zIndex: 10, textAlign: 'center' }}>
@@ -102,6 +102,8 @@ export default function Register() {
             PRECISION <span style={{ color: 'var(--amber-core)' }}>MOBILITY</span>
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '18px', maxWidth: '360px', margin: '0 auto', lineHeight: 1.6 }}>Join the elite network of premium urban transport.</p>
+          
+          {/* Progress Dots */}
           <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginTop: '64px' }}>
             {[1, 2, 3].map(s => (
               <div key={s} style={{ width: s === step ? '32px' : '10px', height: '10px', borderRadius: '5px', background: s <= step ? 'var(--amber-core)' : 'rgba(255,255,255,0.1)', transition: 'all 0.3s ease' }} />
@@ -110,56 +112,68 @@ export default function Register() {
         </div>
       </div>
 
-      {/* Right Panel */}
-      <div style={{ width: '100%', maxWidth: '640px', background: 'var(--bg-deep)', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 80px', borderLeft: '1px solid rgba(255,255,255,0.05)' }}>
+      {/* Right Panel - Full width on Mobile */}
+      <div className="w-full lg:flex-[0.6] flex flex-col justify-center bg-[var(--bg-deep)] px-6 sm:px-12 md:px-20 border-l border-white/5 py-12">
+        {/* Mobile Step Indicators */}
+        <div className="lg:hidden flex justify-center gap-3 mb-10">
+          {[1, 2, 3].map(s => (
+            <div key={s} style={{ width: s === step ? '24px' : '8px', height: '8px', borderRadius: '4px', background: s <= step ? 'var(--amber-core)' : 'rgba(255,255,255,0.1)', transition: 'all 0.3s ease' }} />
+          ))}
+        </div>
+
         <AnimatePresence mode="wait">
           {step === 1 && (
-            <motion.div key="s1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-              <h2 style={{ fontSize: '2rem', marginBottom: '8px' }}>Choose Your Path</h2>
+            <motion.div key="s1" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: -20 }}>
+              <div className="lg:hidden flex items-center gap-3 mb-10 justify-center">
+                <Zap size={24} color="var(--amber-core)" fill="var(--amber-core)" />
+                <span className="font-display text-xl font-bold tracking-wider">RIDEFLOW</span>
+              </div>
+
+              <h2 className="text-3xl mb-2">Choose Your Path</h2>
               <p style={{ color: 'var(--text-muted)', marginBottom: '48px', fontSize: '14px' }}>Select how you'd like to experience RideFlow.</p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '48px' }}>
+              <div className="flex flex-col gap-5 mb-12">
                 {[{ id: 'Rider', title: "I'm a Rider", icon: User }, { id: 'Driver', title: "I want to Drive", icon: Car }].map(item => (
-                  <GlassCard key={item.id} level={role === item.id ? 'amber' : 1} onClick={() => setRole(item.id)} style={{ padding: '24px 32px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '24px', border: role === item.id ? '1px solid var(--amber-core)' : '1px solid rgba(255,255,255,0.05)' }}>
-                    <div style={{ width: '56px', height: '56px', borderRadius: '12px', background: 'var(--amber-ghost)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--amber-core)' }}><item.icon size={24} /></div>
-                    <h4 style={{ fontSize: '1.1rem', color: role === item.id ? 'var(--amber-core)' : 'var(--text-primary)' }}>{item.title}</h4>
+                  <GlassCard key={item.id} level={role === item.id ? 'amber' : 1} onClick={() => setRole(item.id)} className={`p-6 md:p-8 cursor-pointer flex items-center gap-6 border ${role === item.id ? 'border-[var(--amber-core)]' : 'border-white/5'}`}>
+                    <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl bg-[var(--amber-ghost)] flex items-center justify-center text-[var(--amber-core)]"><item.icon size={24} /></div>
+                    <h4 className={`text-lg ${role === item.id ? 'text-[var(--amber-core)]' : 'text-[var(--text-primary)]'}`}>{item.title}</h4>
                   </GlassCard>
                 ))}
               </div>
-              <button className="btn-primary" style={{ width: '100%', padding: '18px' }} onClick={() => setStep(2)}>Continue <ArrowRight size={18} /></button>
+              <button className="btn-primary w-full py-[18px]" onClick={() => setStep(2)}>Continue <ArrowRight size={18} /></button>
               <p style={{ textAlign: 'center', marginTop: '32px', fontSize: '14px' }}>Already a member? <Link to="/login" style={{ color: 'var(--amber-core)', textDecoration: 'none' }}>Sign In</Link></p>
             </motion.div>
           )}
 
           {step === 2 && (
-            <motion.div key="s2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+            <motion.div key="s2" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: -20 }}>
               <button onClick={() => setStep(1)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', marginBottom: '24px' }}>← Back</button>
-              <h2 style={{ fontSize: '2rem', marginBottom: '32px' }}>Personal Profile</h2>
-              <form onSubmit={handleRegister} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                <div style={{ gridColumn: 'span 2' }}><Input label="Full Name" value={form.full_name} onChange={e => update('full_name', e.target.value)} error={fieldErrors.full_name} required /></div>
+              <h2 className="text-3xl mb-8">Personal Profile</h2>
+              <form onSubmit={handleRegister} className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div className="sm:col-span-2"><Input label="Full Name" value={form.full_name} onChange={e => update('full_name', e.target.value)} error={fieldErrors.full_name} required /></div>
                 <Input label="Email" type="email" value={form.email} onChange={e => update('email', e.target.value)} error={fieldErrors.email} required />
                 <Input label="Phone" value={form.phone} onChange={e => update('phone', e.target.value)} error={fieldErrors.phone} required />
                 {role === 'Driver' && (
                   <><Input label="License" value={form.license_number} onChange={e => update('license_number', e.target.value)} error={fieldErrors.license_number} required /><Input label="CNIC" placeholder="XXXXX-XXXXXXX-X" value={form.cnic} onChange={e => update('cnic', e.target.value)} error={fieldErrors.cnic} required /></>
                 )}
-                <div style={{ gridColumn: 'span 2' }}>
+                <div className="sm:col-span-2">
                   <label className="label-caps">Password</label>
                   <div style={{ position: 'relative' }}>
                     <input className="rf-input" type={showPw ? 'text' : 'password'} value={form.password} onChange={e => update('password', e.target.value)} required />
                     <button type="button" onClick={() => setShowPw(!showPw)} style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>{showPw ? <EyeOff size={18} /> : <Eye size={18} />}</button>
                   </div>
                   {form.password && (
-                    <div style={{ marginTop: '8px' }}>
+                    <div style={{ marginTop: '12px' }}>
                       <div style={{ height: '4px', background: 'rgba(255,255,255,0.05)', borderRadius: '2px', overflow: 'hidden' }}>
                         <div style={{ height: '100%', width: `${strength * 25}%`, background: strengthColor[strength], transition: 'all 0.3s' }} />
                       </div>
-                      <p style={{ fontSize: '11px', color: strengthColor[strength], marginTop: '4px' }}>{strengthText[strength]}</p>
+                      <p style={{ fontSize: '11px', color: strengthColor[strength], marginTop: '6px' }}>{strengthText[strength]}</p>
                     </div>
                   )}
                   {fieldErrors.password && <p style={{ color: '#EF4444', fontSize: '11px', marginTop: '4px' }}>{fieldErrors.password}</p>}
                 </div>
-                <div style={{ gridColumn: 'span 2' }}><Input label="Confirm Password" type="password" value={form.confirm_password} onChange={e => update('confirm_password', e.target.value)} error={fieldErrors.confirm_password} required /></div>
-                <div style={{ gridColumn: 'span 2', marginTop: '16px' }}>
-                  <button className="btn-primary" type="submit" disabled={loading} style={{ width: '100%', padding: '18px' }}>
+                <div className="sm:col-span-2"><Input label="Confirm Password" type="password" value={form.confirm_password} onChange={e => update('confirm_password', e.target.value)} error={fieldErrors.confirm_password} required /></div>
+                <div className="sm:col-span-2 mt-4">
+                  <button className="btn-primary w-full py-[18px]" type="submit" disabled={loading}>
                     {loading ? <Spinner size={18} /> : <>Create Account <ShieldCheck size={18} /></>}
                   </button>
                 </div>

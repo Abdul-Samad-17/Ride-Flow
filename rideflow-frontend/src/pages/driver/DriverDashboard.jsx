@@ -1,4 +1,3 @@
-// src/pages/driver/DriverDashboard.jsx
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -6,19 +5,22 @@ import {
   Search, Shield, Star, Wallet, ArrowRight, Zap, Bell, CheckCircle,
   Power, TrendingUp, User, DollarSign, Calendar, X, ExternalLink, Banknote
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import useAuthStore from '../../store/authStore';
 import useRideStore from '../../store/rideStore';
 import * as authService from '../../services/authService';
 import * as driverService from '../../services/driverService';
 import * as rideService from '../../services/rideService';
 import * as vehicleService from '../../services/vehicleService';
-import { GlassCard, Badge, Spinner, Button, Input, EmptyState } from '../../components/ui';
+import { GlassCard, Badge, Spinner, Button, Input, EmptyState, RatingStars } from '../../components/ui';
 import { useApi } from '../../hooks/useApi';
 import toast from 'react-hot-toast';
 import RideMap from '../../components/maps/RideMap';
 import ActiveRidePanel from '../../components/rides/ActiveRidePanel';
 import * as walletService from '../../services/walletService';
+import * as ratingService from '../../services/ratingService';
+import * as uploadService from '../../services/uploadService';
+import DashboardLayout from '../../components/layout/DashboardLayout';
 
 export default function DriverDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
@@ -29,9 +31,21 @@ export default function DriverDashboard() {
   const { activeRide, setActiveRide, clearRide } = useRideStore();
   const { loading: statsLoading, execute: execStats } = useApi();
   const { loading: toggleLoading, execute: execToggle } = useApi();
+  const { pathname } = useLocation();
+
+  // Sync activeTab with URL
+  useEffect(() => {
+    const segments = pathname.split('/');
+    const path = segments[segments.length - 1];
+    if (['overview', 'rides', 'earnings', 'profile'].includes(path)) {
+      setActiveTab(path);
+    } else if (pathname === '/dashboard/driver') {
+      setActiveTab('overview');
+    }
+  }, [pathname]);
 
   const fetchStats = useCallback(async () => {
-    const res = await execStats(() => driverService.getStats(), { showSuccessToast: false });
+    const res = await execStats(() => driverService.getStats(), { showSuccessToast: false, showErrorToast: false });
     if (res) setStats(res.data);
   }, [execStats]);
 
@@ -40,17 +54,24 @@ export default function DriverDashboard() {
     if (res) setVehicles(res.data);
   }, []);
 
-  const checkActiveRide = useCallback(async () => {
-    const res = await rideService.getActiveRide().catch(() => null);
-    if (res?.data) setActiveRide(res.data);
-    else if (activeRide) clearRide();
-  }, [setActiveRide, clearRide, activeRide]);
-
   useEffect(() => {
     fetchStats();
     fetchVehicles();
-    setIsActive(user?.account_status === 'Active'); // Simplified for now
+    setIsActive(user?.account_status === 'Active' || user?.availability_status === 'Online');
   }, [fetchStats, fetchVehicles, user]);
+
+  // Polling for active ride status
+  useEffect(() => {
+    const poll = async () => {
+      const res = await rideService.getActiveRide().catch(() => null);
+      if (res?.data) setActiveRide(res.data);
+      else setActiveRide(null); 
+    };
+    
+    poll();
+    const interval = setInterval(poll, 8000);
+    return () => clearInterval(interval);
+  }, [setActiveRide]);
 
   // Driver Location Tracking
   useEffect(() => {
@@ -67,149 +88,137 @@ export default function DriverDashboard() {
       );
     };
 
-    updateDriverPos(); // Initial
-    const interval = setInterval(updateDriverPos, 15000); // Every 15s
+    updateDriverPos();
+    const interval = setInterval(updateDriverPos, 15000);
     return () => clearInterval(interval);
   }, [isActive]);
-
-  useEffect(() => {
-    const poll = async () => {
-      const res = await rideService.getActiveRide().catch(() => null);
-      if (res?.data) setActiveRide(res.data);
-      else setActiveRide(null); 
-    };
-    
-    poll();
-    const interval = setInterval(poll, 8000);
-    return () => clearInterval(interval);
-  }, [setActiveRide]);
 
   const handleToggleActive = async () => {
     const newStatus = !isActive;
     const payload = {
       status: newStatus ? 'Online' : 'Offline',
-      city: 'Islamabad' // Default for now, ideally fetched from geolocation or profile
+      city: user?.current_city || 'Islamabad'
     };
     
-    const res = await execToggle(() => driverService.toggleAvailability(payload), {
+    await execToggle(() => driverService.toggleAvailability(payload), {
       successMessage: `You are now ${newStatus ? 'Online' : 'Offline'}`,
       onSuccess: () => setIsActive(newStatus)
     });
   };
 
-  const handleLogout = async () => {
-    await authService.logout().catch(() => {});
-    clearAuth();
-    window.location.href = '/';
-  };
-
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-void)' }}>
-      <aside style={{ width: '280px', background: 'var(--bg-deep)', borderRight: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', padding: '40px 20px', position: 'fixed', height: '100vh', zIndex: 50 }}>
-        <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '60px', paddingLeft: '20px', textDecoration: 'none', color: 'inherit' }}>
-          <Zap size={22} color="var(--amber-core)" fill="var(--amber-core)" />
-          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.1rem', letterSpacing: '0.05em' }}>RIDEFLOW</span>
-        </Link>
-        <nav style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {[
-            { id: 'overview', label: 'Overview', icon: TrendingUp },
-            { id: 'rides', label: 'Current Task', icon: Navigation },
-            { id: 'earnings', label: 'Earnings', icon: DollarSign },
-            { id: 'profile', label: 'Profile', icon: User },
-          ].map(item => (
-            <button key={item.id} onClick={() => setActiveTab(item.id)} style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px 20px', borderRadius: '12px', border: 'none', cursor: 'pointer', textAlign: 'left', background: activeTab === item.id ? 'var(--amber-ghost)' : 'transparent', color: activeTab === item.id ? 'var(--amber-core)' : 'var(--text-muted)', transition: 'all 0.2s', fontWeight: activeTab === item.id ? 600 : 500 }}>
-              <item.icon size={20} />
-              <span style={{ fontSize: '14px' }}>{item.label}</span>
-            </button>
-          ))}
-        </nav>
-        <div style={{ marginTop: 'auto', padding: '20px' }}>
-          <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '14px' }}><LogOut size={18} /> Sign Out</button>
-        </div>
-      </aside>
-
-      <main style={{ flex: 1, marginLeft: '280px', padding: '40px 60px' }}>
-        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '48px' }}>
+    <DashboardLayout>
+      <div className="max-w-7xl mx-auto">
+        <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-12">
           <div>
-            <h1 style={{ fontSize: '2rem', marginBottom: '8px' }}>Driver Hub</h1>
-            <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>Welcome back, Capt. {user?.full_name?.split(' ')[1] || user?.full_name?.split(' ')[0]}</p>
+            <h1 className="text-3xl md:text-4xl font-bold mb-2">Driver Hub</h1>
+            <p className="text-[var(--text-muted)] text-sm md:text-base">
+              Welcome back, Capt. {user?.full_name?.split(' ')[0]}
+            </p>
           </div>
-          <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
-            <button onClick={handleToggleActive} disabled={toggleLoading} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 24px', borderRadius: '14px', border: 'none', cursor: 'pointer', fontWeight: 700, background: isActive ? '#22C55E' : 'rgba(255, 255, 255, 0.05)', color: isActive ? '#050508' : 'var(--text-muted)', transition: 'all 0.4s', boxShadow: isActive ? '0 0 20px rgba(34, 197, 94, 0.3)' : 'none' }}>
+          <div className="flex w-full sm:w-auto gap-4 items-center">
+            <button 
+              onClick={handleToggleActive} 
+              disabled={toggleLoading}
+              className={`flex-1 sm:flex-initial flex items-center justify-center gap-3 py-4 px-8 rounded-2xl font-bold transition-all ${
+                isActive 
+                  ? 'bg-green-500 text-black shadow-[0_0_25px_rgba(34,197,94,0.3)]' 
+                  : 'bg-white/5 text-[var(--text-muted)] border border-white/5'
+              }`}
+            >
               <Power size={18} /> {isActive ? 'GO OFFLINE' : 'GO ONLINE'}
             </button>
-            <div style={{ width: '1px', height: '40px', background: 'rgba(255,255,255,0.05)' }} />
-            <button style={{ width: '44px', height: '44px', borderRadius: '12px', background: 'var(--bg-glass)', border: '1px solid rgba(255,255,255,0.05)', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Bell size={20} /></button>
+            <button className="w-12 h-12 rounded-2xl bg-white/5 border border-white/5 text-[var(--text-primary)] flex items-center justify-center hover:bg-white/10 transition-colors">
+              <Bell size={22} />
+            </button>
           </div>
         </header>
 
         <AnimatePresence mode="wait">
-          {activeTab === 'overview' && <OverviewTab key="overview" stats={stats} isActive={isActive} activeRide={activeRide} />}
+          {activeTab === 'overview' && <OverviewTab key="overview" stats={stats} isActive={isActive} activeRide={activeRide} onNavigate={() => setActiveTab('rides')} />}
           {activeTab === 'rides' && <ActiveRideTab key="rides" activeRide={activeRide} />}
           {activeTab === 'earnings' && <EarningsTab key="earnings" />}
           {activeTab === 'profile' && <ProfileTab key="profile" user={user} vehicles={vehicles} onAddVehicle={fetchVehicles} />}
         </AnimatePresence>
-      </main>
-    </div>
+      </div>
+    </DashboardLayout>
   );
 }
 
-function OverviewTab({ stats, isActive, activeRide }) {
+function OverviewTab({ stats, isActive, activeRide, onNavigate }) {
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '24px', marginBottom: '48px' }}>
-        <GlassCard level={1} style={{ padding: '32px' }}>
-          <p className="label-caps" style={{ marginBottom: '16px' }}>Today's Earnings</p>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-            <span className="font-mono" style={{ fontSize: '2.5rem', fontWeight: 700 }}>${parseFloat(stats.today_earnings || 0).toFixed(2)}</span>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+        <GlassCard level={1} className="p-8">
+          <p className="label-caps text-[10px] mb-4">Today's Earnings</p>
+          <div className="flex items-baseline gap-2">
+            <span className="text-3xl md:text-4xl font-black font-mono">PKR {parseFloat(stats.today_earnings || 0).toFixed(2)}</span>
           </div>
         </GlassCard>
-        <GlassCard level={1} style={{ padding: '32px' }}>
-          <p className="label-caps" style={{ marginBottom: '16px' }}>Total Rides</p>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-            <span className="font-mono" style={{ fontSize: '2.5rem', fontWeight: 700 }}>{stats.total_rides || 0}</span>
+        <GlassCard level={1} className="p-8">
+          <p className="label-caps text-[10px] mb-4">Total Rides</p>
+          <div className="flex items-baseline gap-2">
+            <span className="text-3xl md:text-4xl font-black font-mono">{stats.total_rides || 0}</span>
           </div>
         </GlassCard>
-        <GlassCard level={1} style={{ padding: '32px' }}>
-          <p className="label-caps" style={{ marginBottom: '16px' }}>Rating</p>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-            <span className="font-mono" style={{ fontSize: '2.5rem', fontWeight: 700 }}>{parseFloat(stats.rating || 5.0).toFixed(1)}</span>
-            <Star size={20} fill="var(--amber-core)" color="var(--amber-core)" />
+        <GlassCard level={1} className="p-8 sm:col-span-2 lg:col-span-1">
+          <p className="label-caps text-[10px] mb-4">Rating</p>
+          <div className="flex items-baseline gap-3">
+            <span className="text-3xl md:text-4xl font-black font-mono">{parseFloat(stats.rating || 5.0).toFixed(1)}</span>
+            <Star size={24} className="text-[var(--amber-core)] fill-[var(--amber-core)]" />
           </div>
         </GlassCard>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px' }}>
-        <GlassCard level={2} style={{ padding: '40px', minHeight: '400px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}>
-          {!isActive ? (
-            <>
-              <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'var(--bg-glass)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', marginBottom: '32px', border: '1px solid rgba(255,255,255,0.05)' }}><Power size={32} /></div>
-              <h3 style={{ fontSize: '1.5rem', marginBottom: '16px' }}>Go Online to Earn</h3>
-              <p style={{ color: 'var(--text-muted)', maxWidth: '300px' }}>Switch to online mode to start receiving trip requests.</p>
-            </>
-          ) : activeRide ? (
-            <>
-              <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'var(--amber-ghost)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--amber-core)', marginBottom: '32px' }}><Navigation size={32} /></div>
-              <h3 style={{ fontSize: '1.5rem', marginBottom: '16px' }}>Active Trip In Progress</h3>
-              <p style={{ color: 'var(--text-secondary)' }}>Rider: {activeRide.rider_name}</p>
-              <button className="btn-primary" style={{ marginTop: '24px' }} onClick={() => setActiveTab('rides')}>View Task Details</button>
-            </>
-          ) : (
-            <>
-              <motion.div animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }} transition={{ repeat: Infinity, duration: 2 }} style={{ position: 'absolute', width: '200px', height: '200px', borderRadius: '50%', background: 'rgba(34, 197, 94, 0.1)' }} />
-              <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(34, 197, 94, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#22C55E', marginBottom: '32px', border: '1px solid rgba(34, 197, 94, 0.2)' }}><Search size={32} className="animate-pulse" /></div>
-              <h3 style={{ fontSize: '1.5rem', marginBottom: '16px' }}>Searching for Requests</h3>
-              <p style={{ color: 'var(--text-secondary)' }}>System is looking for matches nearby...</p>
-            </>
-          )}
-        </GlassCard>
-      </div>
+      <GlassCard level={2} className="p-10 md:p-16 min-h-[400px] flex flex-col justify-center items-center text-center relative overflow-hidden">
+        {!isActive ? (
+          <>
+            <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center text-[var(--text-muted)] mb-8 border border-white/10">
+              <Power size={32} />
+            </div>
+            <h3 className="text-2xl font-bold mb-4">Go Online to Earn</h3>
+            <p className="text-[var(--text-muted)] max-w-sm">Switch to online mode to start receiving premium trip requests in your area.</p>
+          </>
+        ) : activeRide ? (
+          <>
+            <div className="w-20 h-20 rounded-full bg-amber-ghost flex items-center justify-center text-[var(--amber-core)] mb-8">
+              <Navigation size={32} />
+            </div>
+            <h3 className="text-2xl font-bold mb-4">Active Trip In Progress</h3>
+            <p className="text-[var(--text-secondary)] mb-8">Rider: {activeRide.rider_name}</p>
+            <Button className="px-10 py-4 font-bold" onClick={onNavigate}>View Task Details</Button>
+          </>
+        ) : (
+          <>
+            <motion.div 
+              animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }} 
+              transition={{ repeat: Infinity, duration: 2 }} 
+              className="absolute w-64 h-64 rounded-full bg-green-500/10 pointer-events-none" 
+            />
+            <div className="w-20 h-20 rounded-full bg-green-500/10 flex items-center justify-center text-green-500 mb-8 border border-green-500/20 z-10">
+              <Search size={32} className="animate-pulse" />
+            </div>
+            <h3 className="text-2xl font-bold mb-4 z-10">Searching for Requests</h3>
+            <p className="text-[var(--text-secondary)] z-10">System is looking for high-priority matches nearby...</p>
+          </>
+        )}
+      </GlassCard>
     </motion.div>
   );
 }
 
 function ActiveRideTab({ activeRide }) {
-  if (!activeRide) return <div style={{ textAlign: 'center', padding: '100px', color: 'var(--text-muted)' }}>No active tasks.</div>;
+  if (!activeRide) return (
+    <div className="py-32 text-center flex flex-col items-center gap-6">
+      <div className="w-20 h-20 rounded-3xl bg-white/5 flex items-center justify-center text-[var(--text-muted)]">
+        <Navigation size={32} />
+      </div>
+      <div>
+        <h3 className="text-xl font-bold mb-2">No active tasks</h3>
+        <p className="text-[var(--text-muted)]">Go online from the overview tab to start receiving rides.</p>
+      </div>
+    </div>
+  );
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
@@ -218,16 +227,13 @@ function ActiveRideTab({ activeRide }) {
   );
 }
 
-import * as ratingService from '../../services/ratingService';
-import { RatingStars } from '../../components/ui';
-
 function EarningsTab() {
   const [history, setHistory] = useState([]);
   const [selectedRide, setSelectedRide] = useState(null);
   const { loading, execute } = useApi();
 
   const fetchHistory = useCallback(async () => {
-    const res = await execute(() => driverService.getEarningsHistory(), { showSuccessToast: false });
+    const res = await execute(() => driverService.getEarningsHistory(), { showSuccessToast: false, showErrorToast: false });
     if (res) setHistory(res.data);
   }, [execute]);
 
@@ -238,44 +244,45 @@ function EarningsTab() {
   const totalEarnings = history.reduce((acc, curr) => acc + parseFloat(curr.driver_amount || 0), 0);
   const totalCommission = history.reduce((acc, curr) => acc + parseFloat(curr.commission || 0), 0);
 
-  if (loading && history.length === 0) return <div style={{ padding: '60px', textAlign: 'center' }}><Spinner /></div>;
+  if (loading && history.length === 0) return <div className="py-32 text-center"><Spinner /></div>;
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '32px', marginBottom: '40px' }}>
-        <GlassCard level={2} style={{ padding: '40px' }}>
-          <h3 style={{ fontSize: '1.25rem', marginBottom: '32px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <History size={20} color="var(--amber-core)" /> Ride Analysis
+      <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-8">
+        <GlassCard level={2} className="p-6 md:p-10">
+          <h3 className="text-xl font-bold mb-8 flex items-center gap-3">
+            <History size={20} className="text-[var(--amber-core)]" /> Ride Analysis
           </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div className="flex flex-col gap-4">
             {history.map(ride => (
-              <div key={ride.ride_id} className="glass-1" style={{ padding: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+              <div key={ride.ride_id} className="glass-1 p-6 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 border border-white/5">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-3">
                     <Badge status={ride.payment_status === 'Paid' ? 'Active' : 'Warning'}>{ride.payment_status}</Badge>
-                    <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>#{ride.ride_id} • {new Date(ride.end_time).toLocaleDateString()}</span>
+                    <span className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider font-bold">
+                      #{ride.ride_id.toString().slice(-6)} • {new Date(ride.end_time).toLocaleDateString()}
+                    </span>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <p style={{ fontSize: '14px', fontWeight: 600, color: 'white' }}>{ride.pickup_location.split(',')[0]} → {ride.dropoff_location.split(',')[0]}</p>
-                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginTop: '8px' }}>
-                      <div style={{ padding: '4px 8px', background: 'rgba(255,255,255,0.03)', borderRadius: '6px' }}>
-                        <span style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block' }}>Rider Rated You</span>
+                  <div className="flex flex-col gap-2">
+                    <p className="text-sm font-bold text-white">
+                      {ride.pickup_location.split(',')[0]} → {ride.dropoff_location.split(',')[0]}
+                    </p>
+                    <div className="flex flex-wrap gap-4 mt-2">
+                      <div className="bg-white/5 px-3 py-2 rounded-xl border border-white/5">
+                        <span className="text-[9px] text-[var(--text-muted)] block mb-1">Rider Rating</span>
                         <RatingStars value={ride.rider_rating_score || 0} size="sm" />
                       </div>
-                      <div style={{ padding: '4px 8px', background: 'rgba(255,255,255,0.03)', borderRadius: '6px' }}>
-                        <span style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block' }}>You Rated Rider</span>
-                        {ride.driver_has_rated ? (
-                          <RatingStars value={ride.driver_rating_score || 0} size="sm" />
-                        ) : (
-                          <button onClick={() => setSelectedRide(ride)} style={{ background: 'none', border: 'none', color: 'var(--amber-core)', fontSize: '11px', cursor: 'pointer', padding: 0 }}>Rate Rider</button>
-                        )}
-                      </div>
+                      {!ride.driver_has_rated && (
+                        <button onClick={() => setSelectedRide(ride)} className="text-[11px] font-bold text-[var(--amber-core)] hover:underline">
+                          Rate Rider
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
-                <div style={{ textAlign: 'right' }}>
-                  <p style={{ fontSize: '18px', fontWeight: 700, color: 'var(--amber-core)' }}>+PKR {parseFloat(ride.driver_amount).toFixed(2)}</p>
-                  <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Fare: PKR {parseFloat(ride.total_fare).toFixed(2)}</p>
+                <div className="text-left sm:text-right w-full sm:w-auto">
+                  <p className="text-xl font-black text-[var(--amber-core)] font-mono">+PKR {parseFloat(ride.driver_amount).toFixed(2)}</p>
+                  <p className="text-[11px] text-[var(--text-muted)]">Gross: PKR {parseFloat(ride.total_fare).toFixed(2)}</p>
                 </div>
               </div>
             ))}
@@ -289,19 +296,19 @@ function EarningsTab() {
           </div>
         </GlassCard>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          <GlassCard level={3} style={{ padding: '32px', background: 'linear-gradient(135deg, rgba(255,191,0,0.1) 0%, rgba(0,0,0,0) 100%)' }}>
-            <TrendingUp size={24} color="var(--amber-core)" style={{ marginBottom: '20px' }} />
-            <p className="label-caps" style={{ marginBottom: '8px' }}>Lifetime Earnings</p>
-            <h2 style={{ fontSize: '2rem', fontWeight: 800 }}>PKR {totalEarnings.toFixed(2)}</h2>
-            <div style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Total Commission Paid</span>
-              <span style={{ fontSize: '14px', fontWeight: 600, color: '#EF4444' }}>PKR {totalCommission.toFixed(2)}</span>
+        <div className="flex flex-col gap-8">
+          <GlassCard level={3} className="p-8 bg-gradient-to-br from-[rgba(245,166,35,0.1)] to-transparent border border-amber-ghost/10">
+            <TrendingUp size={24} className="text-[var(--amber-core)] mb-6" />
+            <p className="label-caps text-[10px] mb-2">Lifetime Earnings</p>
+            <h2 className="text-4xl font-black font-mono">PKR {totalEarnings.toFixed(2)}</h2>
+            <div className="mt-8 pt-6 border-t border-white/5 flex justify-between items-center">
+              <span className="text-xs text-[var(--text-muted)]">Total Commission</span>
+              <span className="text-sm font-bold text-red-500">PKR {totalCommission.toFixed(2)}</span>
             </div>
           </GlassCard>
 
-          <GlassCard level={2} style={{ padding: '32px', flex: 1 }}>
-            <h4 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '20px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Payout Requests</h4>
+          <GlassCard level={2} className="p-8 flex-1">
+            <h4 className="text-xs font-bold uppercase tracking-widest text-[var(--text-muted)] mb-6">Payout Activity</h4>
             <PayoutsList />
           </GlassCard>
         </div>
@@ -328,19 +335,19 @@ function PayoutsList() {
   const { loading, execute } = useApi();
 
   useEffect(() => {
-    execute(() => walletService.getPayoutHistory(), { showSuccessToast: false })
+    execute(() => walletService.getPayoutHistory(), { showSuccessToast: false, showErrorToast: false })
       .then(res => res && setPayouts(res.data || []));
   }, []);
 
-  if (loading && payouts.length === 0) return <div style={{ textAlign: 'center', padding: '20px' }}><Spinner /></div>;
+  if (loading && payouts.length === 0) return <div className="py-10 text-center"><Spinner /></div>;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+    <div className="flex flex-col gap-4">
       {payouts.map(p => (
-        <div key={p.payout_id} className="glass-1" style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div key={p.payout_id} className="glass-1 p-4 rounded-xl flex justify-between items-center border border-white/5">
           <div>
-            <div style={{ fontSize: '13px', fontWeight: 600 }}>PKR {parseFloat(p.amount).toFixed(2)}</div>
-            <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{new Date(p.request_date).toLocaleDateString()}</div>
+            <div className="text-sm font-bold">PKR {parseFloat(p.amount).toFixed(2)}</div>
+            <div className="text-[10px] text-[var(--text-muted)]">{new Date(p.request_date).toLocaleDateString()}</div>
           </div>
           <Badge status={p.status === 'Completed' ? 'Active' : p.status === 'Pending' ? 'Warning' : 'Error'}>
             {p.status}
@@ -350,23 +357,20 @@ function PayoutsList() {
       {payouts.length === 0 && (
         <EmptyState 
           icon={Banknote} 
-          title="No payout requests yet" 
-          subtitle="Your earnings will accumulate in your wallet. Request your first payout when you're ready!" 
+          title="No payouts" 
+          subtitle="Requests will appear here." 
         />
       )}
     </div>
   );
 }
 
-import * as uploadService from '../../services/uploadService';
-
 function ProfileTab({ user, vehicles, onAddVehicle }) {
-  const [subTab, setSubTab] = useState('reputation'); // 'reputation' | 'vehicles' | 'settings'
+  const [subTab, setSubTab] = useState('reputation');
   const [profileForm, setProfileForm] = useState({ full_name: user?.full_name || '', phone: user?.phone || '' });
   const [driverForm, setDriverForm] = useState({ current_city: user?.current_city || '' });
   const [passForm, setPassForm] = useState({ current_password: '', new_password: '', confirm_password: '' });
   const [uploading, setUploading] = useState(false);
-  const [progress, setProgress] = useState(0);
   const [showPass, setShowPass] = useState(false);
   const { loading, execute } = useApi();
   const { clearAuth } = useAuthStore();
@@ -419,13 +423,19 @@ function ProfileTab({ user, vehicles, onAddVehicle }) {
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-      <div style={{ display: 'flex', gap: '16px', marginBottom: '32px' }}>
+      <div className="flex gap-2 overflow-x-auto pb-4 mb-8 scrollbar-hide">
         {[
           { id: 'reputation', label: 'Reputation', icon: Star },
-          { id: 'vehicles', label: 'My Vehicles', icon: Car },
-          { id: 'settings', label: 'Account Settings', icon: Settings },
+          { id: 'vehicles', label: 'Vehicles', icon: Car },
+          { id: 'settings', label: 'Settings', icon: Settings },
         ].map(t => (
-          <button key={t.id} onClick={() => setSubTab(t.id)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', borderRadius: '12px', border: 'none', background: subTab === t.id ? 'var(--amber-ghost)' : 'transparent', color: subTab === t.id ? 'var(--amber-core)' : 'var(--text-muted)', cursor: 'pointer', fontWeight: 600, transition: '0.2s' }}>
+          <button 
+            key={t.id} 
+            onClick={() => setSubTab(t.id)} 
+            className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold whitespace-nowrap transition-all ${
+              subTab === t.id ? 'bg-amber-ghost text-[var(--amber-core)]' : 'text-[var(--text-muted)] hover:text-white'
+            }`}
+          >
             <t.icon size={16} /> {t.label}
           </button>
         ))}
@@ -434,44 +444,44 @@ function ProfileTab({ user, vehicles, onAddVehicle }) {
       <AnimatePresence mode="wait">
         {subTab === 'reputation' && (
           <motion.div key="rep" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px' }}>
-              <GlassCard level={2} style={{ padding: '40px' }}>
-                <h3 style={{ fontSize: '1.25rem', marginBottom: '32px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <Star size={20} color="var(--amber-core)" /> Reputational Analytics
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <GlassCard level={2} className="p-8 md:p-12">
+                <h3 className="text-xl font-bold mb-10 flex items-center gap-3">
+                  <Star size={20} className="text-[var(--amber-core)]" /> Reputational Analytics
                 </h3>
-                <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-                  <h2 style={{ fontSize: '4rem', fontWeight: 800, color: 'var(--amber-core)', marginBottom: '8px' }}>{parseFloat(summary.avg_rating || 0).toFixed(1)}</h2>
+                <div className="text-center mb-10">
+                  <h2 className="text-6xl font-black text-[var(--amber-core)] mb-2 font-mono">{parseFloat(summary.avg_rating || 0).toFixed(1)}</h2>
                   <RatingStars value={summary.avg_rating || 0} size="md" />
-                  <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginTop: '12px' }}>{summary.total_ratings} verified reviews</p>
+                  <p className="text-[var(--text-muted)] text-xs mt-4 uppercase tracking-widest">{summary.total_ratings} verified reviews</p>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div className="flex flex-col gap-4">
                   {['five_star', 'four_star', 'three_star', 'two_star', 'one_star'].map((key, i) => {
                     const percent = summary.total_ratings > 0 ? ((summary[key] || 0) / summary.total_ratings) * 100 : 0;
                     return (
-                      <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <span style={{ fontSize: '11px', color: 'var(--text-muted)', width: '40px' }}>{5 - i} star</span>
-                        <div style={{ flex: 1, height: '6px', background: 'rgba(255,255,255,0.03)', borderRadius: '3px', overflow: 'hidden' }}>
-                          <motion.div initial={{ width: 0 }} animate={{ width: `${percent}%` }} style={{ height: '100%', background: 'var(--amber-core)' }} />
+                      <div key={key} className="flex items-center gap-4">
+                        <span className="text-[10px] text-[var(--text-muted)] w-10 font-bold">{5 - i} STAR</span>
+                        <div className="flex-1 h-2 bg-white/5 rounded-full overflow-hidden">
+                          <motion.div initial={{ width: 0 }} animate={{ width: `${percent}%` }} className="h-full bg-[var(--amber-core)] shadow-[0_0_10px_rgba(245,166,35,0.4)]" />
                         </div>
-                        <span style={{ fontSize: '11px', color: 'var(--text-secondary)', width: '30px', textAlign: 'right' }}>{Math.round(percent)}%</span>
+                        <span className="text-[10px] text-[var(--text-secondary)] w-8 text-right font-mono">{Math.round(percent)}%</span>
                       </div>
                     );
                   })}
                 </div>
               </GlassCard>
-              <GlassCard level={2} style={{ padding: '40px' }}>
-                <h4 className="label-caps" style={{ marginBottom: '24px' }}>Latest Feedback</h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <GlassCard level={2} className="p-8 md:p-12">
+                <h4 className="label-caps text-[10px] mb-8">Latest Passenger Feedback</h4>
+                <div className="flex flex-col gap-4">
                   {ratingsData.ratings.slice(0, 4).map(r => (
-                    <div key={r.rating_id} style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.03)' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <div key={r.rating_id} className="p-5 bg-white/5 rounded-2xl border border-white/5">
+                      <div className="flex justify-between items-center mb-3">
                         <RatingStars value={r.score} size="sm" />
-                        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{new Date(r.timestamp).toLocaleDateString()}</span>
+                        <span className="text-[10px] text-[var(--text-muted)] font-mono">{new Date(r.timestamp).toLocaleDateString()}</span>
                       </div>
-                      <p style={{ fontSize: '13px', color: 'var(--text-secondary)', fontStyle: 'italic' }}>"{r.comment || 'No comment provided'}"</p>
+                      <p className="text-sm text-[var(--text-secondary)] italic leading-relaxed">"{r.comment || 'No comment provided'}"</p>
                     </div>
                   ))}
-                  {ratingsData.ratings.length === 0 && <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '40px' }}>No reviews yet.</p>}
+                  {ratingsData.ratings.length === 0 && <EmptyState icon={Star} title="No feedback yet" subtitle="Complete trips to see what riders say about you." />}
                 </div>
               </GlassCard>
             </div>
@@ -486,69 +496,65 @@ function ProfileTab({ user, vehicles, onAddVehicle }) {
 
         {subTab === 'settings' && (
           <motion.div key="set" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '32px' }}>
-              <GlassCard level={2} style={{ padding: '40px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '32px', marginBottom: '48px' }}>
-                  <div style={{ position: 'relative' }}>
-                    <div style={{ width: '90px', height: '90px', borderRadius: '24px', overflow: 'hidden', background: 'var(--bg-glass)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      {user?.profile_photo ? <img src={user.profile_photo} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <User size={32} color="var(--amber-core)" />}
+            <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-8">
+              <GlassCard level={2} className="p-8 md:p-12">
+                <div className="flex flex-col sm:flex-row items-center gap-8 mb-12">
+                  <div className="relative group cursor-pointer">
+                    <div className="w-24 h-24 rounded-3xl overflow-hidden bg-white/5 border border-white/10 flex items-center justify-center">
+                      {user?.profile_photo ? <img src={user.profile_photo} alt="Profile" className="w-full h-full object-cover" /> : <User size={32} className="text-[var(--amber-core)]" />}
                     </div>
-                    <label style={{ position: 'absolute', inset: 0, borderRadius: '24px', background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', opacity: 0 }} onMouseEnter={e => e.currentTarget.style.opacity = 1} onMouseLeave={e => e.currentTarget.style.opacity = 0}>
-                      <Clock size={20} color="white" />
+                    <label className="absolute inset-0 rounded-3xl bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer">
+                      <Car size={20} className="text-white" />
                       <input type="file" hidden onChange={handlePhotoChange} accept="image/*" />
                     </label>
                   </div>
-                  <div>
-                    <h3 style={{ fontSize: '1.25rem' }}>Personal Profile</h3>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>Update your visible identity and contact details.</p>
+                  <div className="text-center sm:text-left">
+                    <h3 className="text-2xl font-bold">Personal Profile</h3>
+                    <p className="text-[var(--text-muted)] text-sm">Update your identity and operational city.</p>
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '32px' }}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-10">
                   <Input label="Full Name" value={profileForm.full_name} onChange={e => setProfileForm(p => ({ ...p, full_name: e.target.value }))} />
                   <Input label="Phone Number" value={profileForm.phone} onChange={e => setProfileForm(p => ({ ...p, phone: e.target.value }))} />
-                  <div style={{ gridColumn: 'span 2' }}>
-                    <Input label="Email (Login ID)" value={user?.email} disabled />
+                  <div className="sm:col-span-2">
+                    <Input label="Email Address" value={user?.email} disabled className="opacity-50" />
                   </div>
                 </div>
-                <Button block onClick={handleUpdateProfile} disabled={loading}>Save Profile Changes</Button>
+                <Button className="w-full py-4 font-bold" onClick={handleUpdateProfile} disabled={loading}>Save Profile Changes</Button>
 
-                <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '40px 0' }} />
+                <div className="h-px bg-white/5 my-12" />
 
-                <h3 style={{ fontSize: '1.25rem', marginBottom: '24px' }}>Operational Settings</h3>
-                <div style={{ marginBottom: '32px' }}>
+                <h3 className="text-xl font-bold mb-6">Operational Settings</h3>
+                <div className="mb-10">
                   <Input label="Current Operating City" value={driverForm.current_city} onChange={e => setDriverForm(p => ({ ...p, current_city: e.target.value }))} />
-                  <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '8px' }}>* This helps the system match you with riders in your immediate vicinity.</p>
+                  <p className="text-[10px] text-[var(--text-muted)] mt-2 italic uppercase tracking-wider font-bold">* Essential for matching nearby riders</p>
                 </div>
-                <Button variant="secondary" block onClick={handleUpdateDriver} disabled={loading}>Update City</Button>
+                <Button variant="secondary" className="w-full py-4 font-bold" onClick={handleUpdateDriver} disabled={loading}>Update City</Button>
               </GlassCard>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-                <GlassCard level={3} style={{ padding: '32px' }}>
-                  <h4 className="label-caps" style={{ marginBottom: '24px' }}>Security Credentials</h4>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>License Number</span>
-                      <span className="font-mono" style={{ fontSize: '14px', fontWeight: 600 }}>••••••{user?.license_number?.slice(-4)}</span>
+              <div className="flex flex-col gap-8">
+                <GlassCard level={3} className="p-8">
+                  <h4 className="label-caps text-[10px] mb-6">Security Credentials</h4>
+                  <div className="flex flex-col gap-5">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-[var(--text-muted)]">License Number</span>
+                      <span className="font-mono text-sm font-bold">••••••{user?.license_number?.slice(-4)}</span>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>CNIC (Masked)</span>
-                      <span className="font-mono" style={{ fontSize: '14px', fontWeight: 600 }}>•••••-•••••••-•</span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Verification</span>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-[var(--text-muted)]">Verification</span>
                       <Badge status={user?.verification_status === 'Verified' ? 'Active' : 'Warning'}>{user?.verification_status}</Badge>
                     </div>
                   </div>
                 </GlassCard>
 
-                <GlassCard level={2} style={{ padding: '32px' }}>
-                  <h4 className="label-caps" style={{ marginBottom: '24px' }}>Change Password</h4>
-                  <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <GlassCard level={2} className="p-8">
+                  <h4 className="label-caps text-[10px] mb-8">Update Password</h4>
+                  <form onSubmit={handleChangePassword} className="flex flex-col gap-4">
                     <Input type="password" placeholder="Current Password" value={passForm.current_password} onChange={e => setPassForm(p => ({ ...p, current_password: e.target.value }))} required />
                     <Input type="password" placeholder="New Password" value={passForm.new_password} onChange={e => setPassForm(p => ({ ...p, new_password: e.target.value }))} required />
                     <Input type="password" placeholder="Confirm New" value={passForm.confirm_password} onChange={e => setPassForm(p => ({ ...p, confirm_password: e.target.value }))} required />
-                    <Button block variant="ghost" disabled={loading} type="submit">Update Password</Button>
+                    <Button className="w-full py-4 font-bold bg-white/5 hover:bg-white/10" variant="ghost" disabled={loading} type="submit">Update Credentials</Button>
                   </form>
                 </GlassCard>
               </div>
@@ -559,7 +565,6 @@ function ProfileTab({ user, vehicles, onAddVehicle }) {
     </motion.div>
   );
 }
-
 
 function RatingModal({ ride, onClose, onSuccess }) {
   const [score, setScore] = useState(5);
@@ -584,116 +589,112 @@ function RatingModal({ ride, onClose, onSuccess }) {
   };
 
   return (
-    <motion.div 
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}
-    >
-      <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} style={{ width: '100%', maxWidth: '440px' }}>
-        <GlassCard level={3} style={{ padding: '40px', textAlign: 'center' }}>
-          <button onClick={onClose} style={{ position: 'absolute', top: '20px', right: '20px', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={20} /></button>
-          <div style={{ width: '64px', height: '64px', borderRadius: '20px', background: 'var(--amber-ghost)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--amber-core)', margin: '0 auto 24px' }}>
-            <User size={32} />
-          </div>
-          <h3 style={{ fontSize: '1.5rem', marginBottom: '8px' }}>Rate Passenger</h3>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '32px' }}>How was your experience with the rider?</p>
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
-            <RatingStars mode="input" size="lg" value={score} onChange={setScore} />
-          </div>
-          <textarea 
-            placeholder="Optional: Note about this rider..."
-            value={comment}
-            onChange={e => setComment(e.target.value)}
-            style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '16px', color: 'white', height: '100px', resize: 'none', marginBottom: '32px' }}
-          />
-          <Button block size="lg" onClick={handleSubmit} disabled={loading}>
-            {loading ? <Spinner size={20} /> : 'Submit Review'}
-          </Button>
-        </GlassCard>
+    <div className="fixed inset-0 z-[1000] bg-black/80 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-6">
+      <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} className="w-full max-w-lg bg-[var(--bg-deep)] rounded-t-[32px] sm:rounded-[32px] border-t sm:border border-white/10 p-8 md:p-12 relative">
+        <button onClick={onClose} className="absolute top-6 right-6 text-[var(--text-muted)]"><X size={24} /></button>
+        <div className="w-16 h-16 rounded-2xl bg-amber-ghost flex items-center justify-center text-[var(--amber-core)] mx-auto mb-6">
+          <User size={32} />
+        </div>
+        <h3 className="text-2xl font-bold text-center mb-2">Rate Passenger</h3>
+        <p className="text-[var(--text-muted)] text-center text-sm mb-10">How was your experience with the rider?</p>
+        <div className="flex justify-center mb-10">
+          <RatingStars mode="input" size="lg" value={score} onChange={setScore} />
+        </div>
+        <textarea 
+          placeholder="Share your feedback..."
+          value={comment}
+          onChange={e => setComment(e.target.value)}
+          className="w-full bg-white/5 border border-white/10 rounded-2xl p-5 text-white text-sm h-32 resize-none mb-10 focus:border-[var(--amber-core)] outline-none"
+        />
+        <Button className="w-full py-5 text-lg font-bold" onClick={handleSubmit} disabled={loading}>
+          {loading ? <Spinner size={20} /> : 'Submit Review'}
+        </Button>
       </motion.div>
-    </motion.div>
+    </div>
   );
 }
 
 function VehicleTab({ vehicles, onAdd }) {
-    const [form, setForm] = useState({ 
-      make: '', 
-      model: '', 
-      year: new Date().getFullYear(), 
-      color: '', 
-      license_plate: '', 
-      vehicle_type: 'Economy' 
+  const [form, setForm] = useState({ 
+    make: '', 
+    model: '', 
+    year: new Date().getFullYear(), 
+    color: '', 
+    license_plate: '', 
+    vehicle_type: 'Economy' 
+  });
+  const { loading, execute } = useApi();
+
+  const handleAdd = async (e) => {
+    e.preventDefault();
+    await execute(() => vehicleService.addVehicle(form), {
+      successMessage: 'Vehicle added for verification',
+      onSuccess: () => {
+        setForm({ make: '', model: '', year: new Date().getFullYear(), color: '', license_plate: '', vehicle_type: 'Economy' });
+        onAdd();
+      }
     });
-    const { loading, execute } = useApi();
-
-    const handleAdd = async (e) => {
-      e.preventDefault();
-      await execute(() => vehicleService.addVehicle(form), {
-        successMessage: 'Vehicle added for verification',
-        onSuccess: () => {
-          setForm({ make: '', model: '', year: new Date().getFullYear(), color: '', license_plate: '', vehicle_type: 'Economy' });
-          onAdd();
-        }
-      });
-    };
-
-    return (
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px' }}>
-          <GlassCard level={2} style={{ padding: '40px' }}>
-            <h3 style={{ fontSize: '1.25rem', marginBottom: '24px' }}>My Vehicles</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {vehicles.map(v => (
-                <div key={v.vehicle_id} className="glass-1" style={{ padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <h4 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px' }}>
-                      {v.make} {v.model} <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>({v.year})</span>
-                    </h4>
-                    <div style={{ display: 'flex', gap: '12px', fontSize: '13px', color: 'var(--text-secondary)' }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><CreditCard size={14} /> {v.license_plate}</span>
-                      <span style={{ color: 'rgba(255,255,255,0.1)' }}>|</span>
-                      <span style={{ color: v.color?.toLowerCase() }}>{v.color}</span>
-                      <span style={{ color: 'rgba(255,255,255,0.1)' }}>|</span>
-                      <span style={{ color: 'var(--amber-core)' }}>{v.vehicle_type}</span>
-                    </div>
-                  </div>
-                  <Badge status={v.verification_status === 'Verified' ? 'Active' : 'Warning'}>
-                    {v.verification_status}
-                  </Badge>
-                </div>
-              ))}
-              {vehicles.length === 0 && <p style={{ color: 'var(--text-muted)' }}>No vehicles registered.</p>}
-            </div>
-          </GlassCard>
-          <GlassCard level={2} style={{ padding: '40px' }}>
-            <h3 style={{ fontSize: '1.25rem', marginBottom: '24px' }}>Add New Vehicle</h3>
-            <form onSubmit={handleAdd} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                <Input label="Make (e.g. Toyota)" value={form.make} onChange={e => setForm(p => ({ ...p, make: e.target.value }))} required />
-                <Input label="Model (e.g. Corolla)" value={form.model} onChange={e => setForm(p => ({ ...p, model: e.target.value }))} required />
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                <Input label="Year" type="number" value={form.year} onChange={e => setForm(p => ({ ...p, year: e.target.value }))} required />
-                <Input label="Color" value={form.color} onChange={e => setForm(p => ({ ...p, color: e.target.value }))} required />
-              </div>
-              <Input label="License Plate" value={form.license_plate} onChange={e => setForm(p => ({ ...p, license_plate: e.target.value }))} required />
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <label style={{ fontSize: '12px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Vehicle Type</label>
-                <select 
-                  value={form.vehicle_type} 
-                  onChange={e => setForm(p => ({ ...p, vehicle_type: e.target.value }))}
-                  style={{ background: 'var(--bg-glass)', border: '1px solid rgba(255,255,255,0.05)', color: 'var(--text-primary)', padding: '12px', borderRadius: '10px', outline: 'none' }}
-                >
-                  <option value="Economy">Economy</option>
-                  <option value="Premium">Premium</option>
-                  <option value="Bike">Bike</option>
-                </select>
-              </div>
-              <button className="btn-primary" type="submit" disabled={loading} style={{ marginTop: '10px' }}>
-                {loading ? <Spinner /> : 'Register Vehicle'}
-              </button>
-            </form>
-          </GlassCard>
-        </div>
-      </motion.div>
-    );
   };
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <GlassCard level={2} className="p-8 md:p-12">
+          <h3 className="text-xl font-bold mb-8">Registered Vehicles</h3>
+          <div className="flex flex-col gap-4">
+            {vehicles.map(v => (
+              <div key={v.vehicle_id} className="glass-1 p-6 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border border-white/5">
+                <div>
+                  <h4 className="text-base font-bold text-white mb-1">
+                    {v.make} {v.model} <span className="text-[var(--text-muted)] font-normal text-sm">({v.year})</span>
+                  </h4>
+                  <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-[var(--text-secondary)] font-medium">
+                    <span className="flex items-center gap-2 tracking-widest font-mono"><CreditCard size={14} className="text-[var(--amber-core)]" /> {v.license_plate}</span>
+                    <span className="opacity-20 hidden sm:block">|</span>
+                    <span className="capitalize">{v.color}</span>
+                    <span className="opacity-20 hidden sm:block">|</span>
+                    <span className="text-[var(--amber-core)] font-bold">{v.vehicle_type}</span>
+                  </div>
+                </div>
+                <Badge status={v.verification_status === 'Verified' ? 'Active' : 'Warning'}>
+                  {v.verification_status}
+                </Badge>
+              </div>
+            ))}
+            {vehicles.length === 0 && <EmptyState icon={Car} title="No vehicles" subtitle="Register your first vehicle below." />}
+          </div>
+        </GlassCard>
+
+        <GlassCard level={2} className="p-8 md:p-12">
+          <h3 className="text-xl font-bold mb-8">Add New Vehicle</h3>
+          <form onSubmit={handleAdd} className="flex flex-col gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <Input label="Make (e.g. Toyota)" value={form.make} onChange={e => setForm(p => ({ ...p, make: e.target.value }))} required />
+              <Input label="Model (e.g. Corolla)" value={form.model} onChange={e => setForm(p => ({ ...p, model: e.target.value }))} required />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <Input label="Year" type="number" value={form.year} onChange={e => setForm(p => ({ ...p, year: e.target.value }))} required />
+              <Input label="Color" value={form.color} onChange={e => setForm(p => ({ ...p, color: e.target.value }))} required />
+            </div>
+            <Input label="License Plate Number" value={form.license_plate} onChange={e => setForm(p => ({ ...p, license_plate: e.target.value }))} required />
+            <div className="flex flex-col gap-3">
+              <label className="label-caps text-[10px]">Vehicle Category</label>
+              <select 
+                value={form.vehicle_type} 
+                onChange={e => setForm(p => ({ ...p, vehicle_type: e.target.value }))}
+                className="w-full bg-white/5 border border-white/10 text-white p-4 rounded-xl outline-none focus:border-[var(--amber-core)] transition-colors"
+              >
+                <option value="Economy" className="bg-[#050508]">Economy</option>
+                <option value="Premium" className="bg-[#050508]">Premium</option>
+                <option value="Bike" className="bg-[#050508]">Bike</option>
+              </select>
+            </div>
+            <Button className="w-full py-5 text-lg font-bold mt-4" type="submit" disabled={loading}>
+              {loading ? <Spinner /> : 'Register for Verification'}
+            </Button>
+          </form>
+        </GlassCard>
+      </div>
+    </motion.div>
+  );
+}

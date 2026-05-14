@@ -1,7 +1,7 @@
 // src/components/layout/Sidebar.jsx
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Home, Car, Map, Wallet, User, BarChart3, Users, Settings, LogOut, Zap, Shield } from 'lucide-react';
+import { Home, Car, Map, Wallet, User, BarChart3, Users, Settings, LogOut, Zap, Shield, X } from 'lucide-react';
 import useAuthStore from '../../store/authStore';
 import api from '../../services/api';
 
@@ -32,7 +32,7 @@ const NAV_ITEMS = {
   ],
 };
 
-export default function Sidebar() {
+export default function Sidebar({ isOpen, onClose }) {
   const { user, role, clearAuth } = useAuthStore();
   const navigate = useNavigate();
   const { pathname } = useLocation();
@@ -43,26 +43,47 @@ export default function Sidebar() {
   const handleLogout = async () => {
     try { await api.post('/auth/logout'); } catch (_) {}
     clearAuth();
+    if (onClose) onClose();
     navigate('/');
   };
 
   return (
-    <aside style={{
-      width: 260, minHeight: '100vh', flexShrink: 0,
-      background: 'rgba(255,255,255,0.03)',
-      backdropFilter: 'blur(20px)',
-      borderRight: '1px solid rgba(255,255,255,0.06)',
-      display: 'flex', flexDirection: 'column',
-      padding: '24px 16px',
-      position: 'sticky', top: 0, height: '100vh', overflowY: 'auto',
-    }}>
-      {/* Logo */}
-      <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 32, padding: '0 8px' }}>
-        <Zap size={20} color="var(--amber-core)" fill="var(--amber-core)" />
-        <span style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', fontWeight: 700, color: 'var(--amber-core)', letterSpacing: '0.08em' }}>
-          RIDEFLOW
-        </span>
-      </Link>
+    <>
+      {/* Mobile Overlay */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-black/60 z-40 lg:hidden" 
+          onClick={onClose}
+        />
+      )}
+
+      <aside 
+        className={`
+          fixed inset-y-0 left-0 z-50 w-[260px] transform transition-transform duration-300 ease-out lg:translate-x-0 lg:static lg:inset-auto
+          ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+        `}
+        style={{
+          minHeight: '100vh', flexShrink: 0,
+          background: 'rgba(10, 10, 15, 0.95)',
+          backdropFilter: 'blur(20px)',
+          borderRight: '1px solid rgba(255,255,255,0.06)',
+          display: 'flex', flexDirection: 'column',
+          padding: '24px 16px',
+          height: '100vh', overflowY: 'auto',
+        }}
+      >
+        {/* Logo */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32, padding: '0 8px' }}>
+          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 8 }} onClick={onClose}>
+            <Zap size={20} color="var(--amber-core)" fill="var(--amber-core)" />
+            <span style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', fontWeight: 700, color: 'var(--amber-core)', letterSpacing: '0.08em' }}>
+              RIDEFLOW
+            </span>
+          </Link>
+          <button className="lg:hidden text-white/40" onClick={onClose}>
+            <X size={20} />
+          </button>
+        </div>
 
       {/* User avatar */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px', marginBottom: 24, borderRadius: 12, background: 'rgba(255,255,255,0.04)' }}>

@@ -147,16 +147,16 @@ export default function ActiveRideTracker({ activeRide, onPaymentSuccess }) {
   }
 
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-      {/* Progress Bar */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '48px', position: 'relative', padding: '0 20px' }}>
-        <div style={{ position: 'absolute', top: '15px', left: '40px', right: '40px', height: '2px', background: 'rgba(255,255,255,0.05)', zIndex: 0 }} />
+    <div className="w-full max-w-[800px] mx-auto px-4 md:px-0">
+      {/* Progress Bar - Scrollable on Mobile */}
+      <div className="flex justify-between items-center mb-10 md:mb-16 relative overflow-x-auto pb-6 scrollbar-hide">
+        <div className="absolute top-[15px] left-[40px] right-[40px] h-[2px] bg-white/5 z-0 min-w-[500px] md:min-w-0" />
         
         {STEPS.map((step, idx) => {
           const isCompleted = idx < currentStepIndex;
           const isCurrent = idx === currentStepIndex;
           return (
-            <div key={step.status} style={{ zIndex: 1, textAlign: 'center', width: '80px' }}>
+            <div key={step.status} className="relative z-[1] text-center min-w-[100px] flex-shrink-0">
               <motion.div 
                 animate={isCurrent ? { scale: [1, 1.1, 1], boxShadow: ['0 0 0px var(--amber-ghost)', '0 0 20px var(--amber-ghost)', '0 0 0px var(--amber-ghost)'] } : {}}
                 transition={{ repeat: Infinity, duration: 2 }}
@@ -179,7 +179,7 @@ export default function ActiveRideTracker({ activeRide, onPaymentSuccess }) {
         {/* Step-Specific Content */}
         {activeRide.status === 'Requested' && (
           <motion.div key="requested" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            <GlassCard level={2} style={{ padding: '40px', textAlign: 'center' }}>
+            <GlassCard level={2} className="p-8 md:p-12 text-center">
               <div style={{ position: 'relative', width: '100px', height: '100px', margin: '0 auto 32px' }}>
                 <motion.div 
                   animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0, 0.5] }}
@@ -193,7 +193,7 @@ export default function ActiveRideTracker({ activeRide, onPaymentSuccess }) {
               <h3 style={{ fontSize: '1.5rem', marginBottom: '12px' }}>Finding your driver...</h3>
               <p style={{ color: 'var(--text-muted)', marginBottom: '32px' }}>We're matching you with the best captain nearby.</p>
               
-              <Button variant="ghost" onClick={async () => {
+              <Button variant="ghost" className="w-full sm:w-auto" onClick={async () => {
                 try {
                   await rideService.cancelRide(activeRide.ride_id);
                   toast.success("Request cancelled.");
@@ -210,25 +210,25 @@ export default function ActiveRideTracker({ activeRide, onPaymentSuccess }) {
 
         {(activeRide.status === 'Accepted' || activeRide.status === 'Driver En Route') && (
           <motion.div key="driver-en-route" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            <GlassCard level={2} className="border-amber-ghost" style={{ padding: '32px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
+            <GlassCard level={2} className="border-amber-ghost p-6 md:p-10">
+              <div className="flex flex-col sm:flex-row justify-between items-start gap-6 mb-8">
                 <div>
                   <h3 style={{ fontSize: '1.4rem', color: 'white', marginBottom: '4px' }}>{activeRide.driver?.name || 'Driver Found'}</h3>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <div style={{ display: 'flex', color: 'var(--amber-core)' }}>
                       {[...Array(5)].map((_, i) => <Star key={i} size={14} fill={i < Math.floor(activeRide.driver?.rating || 5) ? "currentColor" : "none"} />)}
                     </div>
-                    <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{activeRide.driver?.total_trips || '0'} trips completed</span>
+                    <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{activeRide.driver?.total_trips || '0'} trips</span>
                   </div>
                 </div>
-                <a href={`tel:${activeRide.driver?.phone}`} style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'var(--amber-ghost)', color: 'var(--amber-core)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <a href={`tel:${activeRide.driver?.phone}`} className="w-12 h-12 rounded-xl bg-[var(--amber-ghost)] text-[var(--amber-core)] flex items-center justify-center">
                   <Phone size={20} />
                 </a>
               </div>
 
               <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '0 0 24px' }} />
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                   <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: activeRide.vehicle?.color || 'white', border: '1px solid rgba(255,255,255,0.2)' }} />
                   <div>
@@ -238,18 +238,18 @@ export default function ActiveRideTracker({ activeRide, onPaymentSuccess }) {
                     </div>
                   </div>
                 </div>
-                <div style={{ background: 'var(--bg-void)', padding: '8px 16px', borderRadius: '8px', border: '1px solid var(--amber-ghost)', fontFamily: 'JetBrains Mono', color: 'var(--amber-core)', fontWeight: 700 }}>
+                <div className="bg-[#050508] px-4 py-2 rounded-lg border border-amber-ghost/50 font-mono text-[var(--amber-core)] font-bold">
                   {activeRide.vehicle?.plate}
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
-                <div style={{ flex: 1, padding: '16px', background: 'var(--amber-ghost)', borderRadius: '12px', textAlign: 'center' }}>
-                  <p style={{ color: 'var(--amber-core)', fontSize: '14px', fontWeight: 600 }}>
-                    Estimated Fare: <span className="font-mono">PKR {parseFloat(activeRide.fare_estimated).toFixed(2)}</span>
+              <div className="flex flex-col sm:flex-row gap-4 mt-8">
+                <div className="flex-1 p-4 bg-amber-ghost/30 rounded-xl text-center border border-amber-ghost/20">
+                  <p className="text-[var(--amber-core)] text-sm font-semibold">
+                    Est. Fare: <span className="font-mono">PKR {parseFloat(activeRide.fare_estimated).toFixed(2)}</span>
                   </p>
                 </div>
-                <Button variant="ghost" onClick={async () => {
+                <Button variant="ghost" className="w-full sm:w-auto text-[#EF4444] bg-red-500/5" onClick={async () => {
                   try {
                     await rideService.cancelRide(activeRide.ride_id);
                     toast.success("Ride cancelled.");
@@ -257,7 +257,7 @@ export default function ActiveRideTracker({ activeRide, onPaymentSuccess }) {
                   } catch (e) {
                     toast.error(e.response?.data?.message || "Cancellation failed");
                   }
-                }} style={{ color: '#EF4444', background: 'rgba(239, 68, 68, 0.05)' }}>
+                }}>
                   Cancel
                 </Button>
               </div>
@@ -267,7 +267,7 @@ export default function ActiveRideTracker({ activeRide, onPaymentSuccess }) {
 
         {activeRide.status === 'Arrived at Pickup' && (
           <motion.div key="arrived" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
-            <GlassCard level={2} style={{ padding: '32px', textAlign: 'center', border: '2px solid var(--amber-core)' }} className="animate-pulse-subtle">
+            <GlassCard level={2} className="p-8 md:p-12 text-center border-2 border-[var(--amber-core)] animate-pulse-subtle">
               <div style={{ width: '64px', height: '64px', background: 'var(--amber-core)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#050508', margin: '0 auto 20px' }}>
                 <Car size={32} />
               </div>
@@ -280,38 +280,36 @@ export default function ActiveRideTracker({ activeRide, onPaymentSuccess }) {
 
         {activeRide.status === 'In Progress' && (
           <motion.div key="in-progress" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            <GlassCard level={2} style={{ padding: '32px', textAlign: 'center' }}>
-              <div style={{ display: 'flex', justifyContent: 'center', gap: '32px', marginBottom: '32px' }}>
-                <div style={{ textAlign: 'center' }}>
-                  <p className="label-caps" style={{ marginBottom: '8px' }}>Trip Time</p>
-                  <h2 className="font-mono" style={{ fontSize: '2.5rem', color: 'var(--amber-core)' }}>{timer}</h2>
-                </div>
+            <GlassCard level={2} className="p-8 md:p-12 text-center">
+              <div className="mb-10">
+                <p className="label-caps mb-4">Trip Time</p>
+                <h2 className="font-mono text-5xl md:text-6xl text-[var(--amber-core)]">{timer}</h2>
               </div>
-              <div style={{ background: 'var(--bg-glass)', padding: '20px', borderRadius: '16px', textAlign: 'left' }}>
-                <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+              <div className="bg-white/5 p-6 rounded-2xl text-left border border-white/5">
+                <div className="flex gap-4 items-center">
                   <Navigation size={18} color="var(--amber-core)" />
                   <div>
-                    <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>DESTINATION</p>
-                    <p style={{ fontSize: '14px', fontWeight: 600 }}>{activeRide.dropoff_location}</p>
+                    <p className="text-[10px] text-[var(--text-muted)] tracking-widest uppercase">DESTINATION</p>
+                    <p className="text-sm font-semibold leading-relaxed">{activeRide.dropoff_location}</p>
                   </div>
                 </div>
               </div>
-              <p style={{ marginTop: '24px', color: 'var(--text-muted)', fontSize: '14px' }}>Enjoy your ride 🎵</p>
+              <p className="mt-8 text-[var(--text-muted)] text-sm">Enjoy your premium journey 🎵</p>
             </GlassCard>
           </motion.div>
         )}
 
         {activeRide.status === 'Cancelled' && (
           <motion.div key="cancelled" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}>
-            <GlassCard level={2} style={{ padding: '40px', textAlign: 'center', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
-              <div style={{ width: '80px', height: '80px', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#EF4444', margin: '0 auto 24px' }}>
+            <GlassCard level={2} className="p-10 md:p-16 text-center border border-red-500/20">
+              <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center text-[#EF4444] mx-auto mb-8">
                 <Zap size={40} />
               </div>
-              <h2 style={{ fontSize: '1.8rem', marginBottom: '12px' }}>Ride Cancelled</h2>
-              <p style={{ color: 'var(--text-muted)', marginBottom: '32px', maxWidth: '300px', margin: '0 auto 32px' }}>
+              <h2 className="text-3xl mb-4">Ride Cancelled</h2>
+              <p className="text-[var(--text-muted)] text-base mb-10 max-w-sm mx-auto">
                 This ride has been cancelled. If you were charged a hold amount, it has been released back to your wallet.
               </p>
-              <Button block onClick={() => clearRide()}>
+              <Button className="w-full" onClick={() => clearRide()}>
                 Book Another Ride
               </Button>
             </GlassCard>
@@ -320,49 +318,49 @@ export default function ActiveRideTracker({ activeRide, onPaymentSuccess }) {
 
         {activeRide.status === 'Completed' && (
           <motion.div key="completed" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            <GlassCard level={2} style={{ padding: '32px' }}>
-              <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-                <CheckCircle size={48} color="var(--amber-core)" style={{ margin: '0 auto 16px' }} />
-                <h3 style={{ fontSize: '1.5rem' }}>You've Arrived!</h3>
+            <GlassCard level={2} className="p-8 md:p-12">
+              <div className="text-center mb-10">
+                <CheckCircle size={48} color="var(--amber-core)" className="mx-auto mb-6" />
+                <h3 className="text-3xl">You've Arrived!</h3>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '32px' }}>
-                <div className="glass-1" style={{ padding: '16px' }}>
-                  <p className="label-caps" style={{ fontSize: '10px' }}>Distance</p>
-                  <p style={{ fontWeight: 600 }}>{activeRide.actual_distance_km} km</p>
+              <div className="grid grid-cols-2 gap-4 mb-10">
+                <div className="glass-1 p-5 rounded-xl border border-white/5">
+                  <p className="label-caps text-[10px] mb-1">Distance</p>
+                  <p className="text-lg font-bold">{activeRide.actual_distance_km} km</p>
                 </div>
-                <div className="glass-1" style={{ padding: '16px' }}>
-                  <p className="label-caps" style={{ fontSize: '10px' }}>Duration</p>
-                  <p style={{ fontWeight: 600 }}>{activeRide.actual_duration_minutes} min</p>
-                </div>
-              </div>
-
-              <div style={{ marginBottom: '32px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                  <span style={{ color: 'var(--text-muted)' }}>Estimated Fare</span>
-                  <span style={{ textDecoration: 'line-through', color: 'var(--text-muted)' }}>PKR {parseFloat(activeRide.fare_estimated).toFixed(2)}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontWeight: 600 }}>Final Fare</span>
-                  <span className="font-mono" style={{ fontSize: '1.8rem', color: 'var(--amber-core)', fontWeight: 700 }}>PKR {parseFloat(activeRide.final_fare).toFixed(2)}</span>
+                <div className="glass-1 p-5 rounded-xl border border-white/5">
+                  <p className="label-caps text-[10px] mb-1">Duration</p>
+                  <p className="text-lg font-bold">{activeRide.actual_duration_minutes} min</p>
                 </div>
               </div>
 
-              <div style={{ marginBottom: '24px' }}>
-                <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+              <div className="mb-10">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-[var(--text-muted)]">Estimated Fare</span>
+                  <span className="text-[var(--text-muted)] line-through">PKR {parseFloat(activeRide.fare_estimated).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-lg font-semibold">Final Fare</span>
+                  <span className="font-mono text-4xl text-[var(--amber-core)] font-black">PKR {parseFloat(activeRide.final_fare).toFixed(2)}</span>
+                </div>
+              </div>
+
+              <div className="mb-8">
+                <div className="flex gap-3 mb-6">
                   <Input 
                     placeholder="Promo Code" 
                     value={promoCode} 
                     onChange={e => setPromoCode(e.target.value.toUpperCase())}
-                    style={{ flex: 1 }}
+                    className="flex-1"
                   />
                 </div>
-                <Button block size="lg" onClick={handleProcessPayment} disabled={isPaying}>
+                <Button className="w-full py-5 text-lg" onClick={handleProcessPayment} disabled={isPaying}>
                   {isPaying ? <Spinner size={20} /> : 'PAY NOW WITH WALLET'}
                 </Button>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-muted)' }}>
+              <div className="flex justify-center items-center gap-3 text-sm text-[var(--text-muted)]">
                 <Wallet size={14} />
                 <span>Payment Method: <strong>Wallet</strong></span>
               </div>
@@ -371,8 +369,8 @@ export default function ActiveRideTracker({ activeRide, onPaymentSuccess }) {
         )}
       </AnimatePresence>
 
-      {/* Shared Map for all steps */}
-      <div style={{ height: '350px', marginTop: '32px', borderRadius: '24px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.05)' }}>
+      {/* Shared Map - Responsive Height */}
+      <div className="h-[300px] md:h-[400px] mt-10 rounded-[32px] overflow-hidden border border-white/5">
         <RideMap 
           pickup={{ lat: Number(activeRide.pickup_lat), lng: Number(activeRide.pickup_lng) }}
           dropoff={{ lat: Number(activeRide.dropoff_lat), lng: Number(activeRide.dropoff_lng) }}

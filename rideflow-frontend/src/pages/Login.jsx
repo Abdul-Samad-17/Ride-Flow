@@ -38,20 +38,29 @@ export default function Login() {
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-void)' }}>
-      {/* Left Panel */}
-      <div style={{ flex: '1.2', position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'flex-end', padding: '80px', background: '#050508' }}>
+      {/* Left Panel - Hidden on Mobile */}
+      <div className="hidden md:flex" style={{ flex: '0.4', position: 'relative', overflow: 'hidden', alignItems: 'flex-end', padding: '60px', background: '#050508' }}>
         <img src="https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=1200&q=80" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.6 }} />
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(5,5,8,1) 0%, rgba(5,5,8,0.4) 40%, transparent 100%)' }} />
-        <div style={{ position: 'relative', zIndex: 10, maxWidth: '440px' }}>
+        <div style={{ position: 'relative', zIndex: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '40px' }}><Zap size={28} color="var(--amber-core)" fill="var(--amber-core)" /><span style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '0.1em' }}>RIDEFLOW</span></div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '3rem', fontWeight: 700, lineHeight: 1.1, color: 'var(--text-primary)', marginBottom: '24px' }}>THE KEYS TO THE <span style={{ color: 'var(--amber-core)' }}>CITY</span></h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '18px', lineHeight: 1.7 }}>Sign in to access your premium mobility dashboard.</p>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(2rem, 4vw, 3rem)', fontWeight: 700, lineHeight: 1.1, color: 'var(--text-primary)', marginBottom: '24px' }}>THE KEYS TO THE <span style={{ color: 'var(--amber-core)' }}>CITY</span></h1>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '16px', lineHeight: 1.7 }}>Sign in to access your premium mobility dashboard.</p>
         </div>
       </div>
 
-      {/* Right Panel */}
-      <div style={{ width: '100%', maxWidth: '560px', background: 'var(--bg-deep)', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 80px', borderLeft: '1px solid rgba(255,255,255,0.05)' }}>
-        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
+      {/* Right Panel - Full width on Mobile */}
+      <div className="w-full md:flex-[0.6] flex flex-col justify-center bg-[var(--bg-deep)] px-6 sm:px-12 md:px-20 border-l border-white/5">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }} 
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-md mx-auto md:max-w-none"
+        >
+          <div className="md:hidden flex items-center gap-3 mb-12">
+            <Zap size={24} color="var(--amber-core)" fill="var(--amber-core)" />
+            <span className="font-display text-xl font-bold tracking-wider">RIDEFLOW</span>
+          </div>
+
           <h2 style={{ fontSize: '2rem', marginBottom: '12px' }}>Welcome Back</h2>
           <p style={{ color: 'var(--text-muted)', marginBottom: '48px', fontSize: '14px' }}>Don't have an account? <Link to="/register" style={{ color: 'var(--amber-core)', fontWeight: 600, textDecoration: 'none' }}>Create one →</Link></p>
 

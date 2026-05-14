@@ -81,71 +81,47 @@ export default function ActiveRidePanel({ activeRide }) {
   };
 
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+    <div className="w-full max-w-[800px] mx-auto px-4 md:px-0">
       <AnimatePresence>
         {showConfirmModal && (
           <motion.div 
             initial={{ opacity: 0 }} 
             animate={{ opacity: 1 }} 
             exit={{ opacity: 0 }}
-            style={{ 
-              position: 'fixed', 
-              inset: 0, 
-              zIndex: 999, 
-              background: 'rgba(5, 5, 8, 0.85)', 
-              backdropFilter: 'blur(12px)',
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center', 
-              padding: '24px' 
-            }}
+            className="fixed inset-0 z-[999] bg-[#050508]/85 backdrop-blur-xl flex items-end sm:items-center justify-center p-0 sm:p-6"
           >
             <motion.div
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
-              style={{ width: '100%', maxWidth: '440px' }}
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              className="w-full max-w-md bg-[var(--bg-deep)] rounded-t-[32px] sm:rounded-[32px] border-t sm:border border-white/10"
             >
               <GlassCard 
                 level={3} 
-                style={{ 
-                  padding: '40px', 
-                  textAlign: 'center', 
-                  border: '1px solid rgba(245, 166, 35, 0.3)',
-                  boxShadow: '0 24px 60px rgba(0,0,0,0.5), 0 0 20px rgba(245, 166, 35, 0.1)'
-                }}
+                className="p-8 md:p-12 text-center border-none"
               >
-                <div style={{ 
-                  width: '64px', 
-                  height: '64px', 
-                  borderRadius: '20px', 
-                  background: 'var(--amber-ghost)', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center', 
-                  margin: '0 auto 24px',
-                  color: 'var(--amber-core)'
-                }}>
+                <div className="w-16 h-16 rounded-2xl bg-amber-ghost flex items-center justify-center text-[var(--amber-core)] mx-auto mb-6">
                   <Navigation size={32} />
                 </div>
                 
-                <h3 style={{ fontSize: '1.5rem', marginBottom: '12px', color: 'var(--text-primary)' }}>REACHED DESTINATION?</h3>
-                <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: '1.6', marginBottom: '32px' }}>
+                <h3 className="text-2xl font-bold mb-3 text-white">REACHED DESTINATION?</h3>
+                <p className="text-[var(--text-secondary)] text-sm leading-relaxed mb-10">
                   Please confirm you have arrived at <br/>
-                  <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{activeRide.dropoff_location}</span>.
+                  <span className="text-white font-semibold">{activeRide.dropoff_location}</span>.
                 </p>
                 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div className="grid grid-cols-2 gap-4">
                   <Button 
                     variant="secondary" 
                     onClick={() => setShowConfirmModal(false)}
-                    style={{ background: 'rgba(255,255,255,0.03)' }}
+                    className="bg-white/5"
                   >
                     Cancel
                   </Button>
                   <Button 
                     onClick={() => handleAction('destination')} 
                     disabled={loading}
+                    className="font-bold"
                   >
                     {loading ? <Spinner size={18} /> : "Confirm"}
                   </Button>
@@ -158,23 +134,22 @@ export default function ActiveRidePanel({ activeRide }) {
 
       <GlassCard 
         level={2} 
-        style={{ padding: '32px', border: activeRide.status === 'Arrived at Pickup' ? '2px solid var(--amber-core)' : 'none' }}
-        className={activeRide.status === 'Arrived at Pickup' ? 'animate-pulse-subtle' : ''}
+        className={`p-6 md:p-10 ${activeRide.status === 'Arrived at Pickup' ? 'border-2 border-[var(--amber-core)] animate-pulse-subtle' : 'border-white/5'}`}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '32px' }}>
-          <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-            <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: 'var(--bg-glass)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--amber-core)' }}>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-10">
+          <div className="flex gap-5 items-center">
+            <div className="w-14 h-14 rounded-full bg-white/5 flex items-center justify-center text-[var(--amber-core)] border border-white/10">
               <User size={28} />
             </div>
             <div>
-              <h3 style={{ fontSize: '1.25rem', marginBottom: '4px' }}>{activeRide.rider?.name}</h3>
+              <h3 className="text-xl font-bold mb-1">{activeRide.rider?.name}</h3>
               <Badge status={activeRide.status === 'Completed' ? 'Warning' : 'Active'}>
                 {activeRide.status === 'Completed' ? 'WAITING FOR PAYMENT' : activeRide.status.toUpperCase()}
               </Badge>
             </div>
           </div>
-          <div style={{ textAlign: 'right' }}>
-            <a href={`tel:${activeRide.rider?.phone}`} style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--amber-core)', fontWeight: 600 }}>
+          <div className="w-full sm:w-auto">
+            <a href={`tel:${activeRide.rider?.phone}`} className="flex items-center justify-center sm:justify-end gap-3 text-[var(--amber-core)] font-bold bg-amber-ghost/30 py-3 px-6 rounded-xl border border-amber-ghost/20">
               <Phone size={18} /> {activeRide.rider?.phone}
             </a>
           </div>
@@ -184,22 +159,24 @@ export default function ActiveRidePanel({ activeRide }) {
         <AnimatePresence mode="wait">
           {activeRide.status === 'Completed' ? (
             <motion.div key="completed-view" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-              <div style={{ background: 'var(--amber-ghost)', padding: '24px', borderRadius: '16px', textAlign: 'center', marginBottom: '32px' }}>
-                <Clock size={32} color="var(--amber-core)" className="animate-spin-slow" style={{ margin: '0 auto 16px' }} />
-                <h4 style={{ marginBottom: '8px' }}>Waiting for Rider Payment</h4>
-                <p style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Estimated Earnings: <strong>PKR {((activeRide.final_fare || 0) * 0.8).toFixed(2)}</strong></p>
+              <div className="bg-amber-ghost/20 p-8 rounded-2xl text-center mb-10 border border-amber-ghost/10">
+                <Clock size={32} color="var(--amber-core)" className="animate-spin-slow mx-auto mb-4" />
+                <h4 className="text-lg font-bold mb-2">Waiting for Rider Payment</h4>
+                <p className="text-sm text-[var(--text-secondary)]">
+                  Est. Earnings: <strong className="text-[var(--amber-core)]">PKR {((activeRide.final_fare || 0) * 0.8).toFixed(2)}</strong>
+                </p>
                 {activeRide.payment_status === 'Paid' && (
-                  <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} style={{ marginTop: '24px', color: '#22C55E', fontWeight: 700 }}>
-                    <CheckCircle size={20} style={{ display: 'inline', marginRight: '8px' }} />
+                  <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} className="mt-6 text-green-500 font-black text-lg flex items-center justify-center gap-2">
+                    <CheckCircle size={20} />
                     PAYMENT RECEIVED!
                   </motion.div>
                 )}
               </div>
 
               {activeRide.payment_status === 'Paid' && !rating.submitted && (
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-1" style={{ padding: '24px', marginBottom: '32px', textAlign: 'center' }}>
-                  <p style={{ marginBottom: '16px', fontSize: '14px', fontWeight: 600 }}>How was {activeRide.rider?.name} as a passenger?</p>
-                  <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-1 p-8 rounded-2xl mb-10 text-center border border-white/5">
+                  <p className="mb-6 text-sm font-bold">How was {activeRide.rider?.name} as a passenger?</p>
+                  <div className="flex justify-center mb-8">
                     <RatingStars mode="input" size="lg" value={rating.score} onChange={val => setRating(p => ({ ...p, score: val }))} />
                   </div>
                   <textarea 
@@ -207,14 +184,11 @@ export default function ActiveRidePanel({ activeRide }) {
                     value={rating.comment}
                     onChange={e => setRating(p => ({ ...p, comment: e.target.value }))}
                     maxLength={200}
-                    style={{ 
-                      width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', 
-                      borderRadius: '12px', padding: '12px', color: 'white', fontSize: '14px', resize: 'none', height: '60px', marginBottom: '16px'
-                    }}
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white text-sm h-24 resize-none mb-8 focus:border-[var(--amber-core)] outline-none"
                   />
-                  <div style={{ display: 'flex', gap: '12px' }}>
-                    <Button variant="secondary" onClick={() => setRating(p => ({ ...p, submitted: true }))} style={{ flex: 1 }}>Skip</Button>
-                    <Button onClick={handleSubmitRating} disabled={rating.loading} style={{ flex: 1 }}>
+                  <div className="grid grid-cols-2 gap-4">
+                    <Button variant="secondary" onClick={() => setRating(p => ({ ...p, submitted: true }))} className="w-full">Skip</Button>
+                    <Button onClick={handleSubmitRating} disabled={rating.loading} className="w-full">
                       {rating.loading ? <Spinner size={18} /> : 'Submit'}
                     </Button>
                   </div>
@@ -222,25 +196,25 @@ export default function ActiveRidePanel({ activeRide }) {
               )}
 
               {activeRide.payment_status === 'Paid' && rating.submitted && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ textAlign: 'center', padding: '20px', background: 'var(--amber-ghost)', borderRadius: '16px', marginBottom: '32px', color: 'var(--amber-core)', fontWeight: 600 }}>
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center p-6 bg-amber-ghost/20 rounded-2xl mb-10 text-[var(--amber-core)] font-bold">
                   Feedback shared! ⭐
                 </motion.div>
               )}
             </motion.div>
           ) : (
             <motion.div key="active-view" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '32px' }}>
-                <div className="glass-1" style={{ padding: '20px' }}>
-                  <p className="label-caps" style={{ fontSize: '10px', marginBottom: '8px' }}>{activeRide.status === 'In Progress' ? 'Time Elapsed' : 'Pickup Address'}</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
+                <div className="glass-1 p-6 rounded-2xl border border-white/5">
+                  <p className="label-caps text-[10px] mb-3">{activeRide.status === 'In Progress' ? 'Time Elapsed' : 'Pickup Address'}</p>
                   {activeRide.status === 'In Progress' ? (
-                    <h2 className="font-mono" style={{ fontSize: '1.5rem', color: 'var(--amber-core)' }}>{timer}</h2>
+                    <h2 className="font-mono text-3xl text-[var(--amber-core)] font-black">{timer}</h2>
                   ) : (
-                    <p style={{ fontSize: '14px', fontWeight: 600 }}>{activeRide.pickup_location}</p>
+                    <p className="text-sm font-semibold leading-relaxed">{activeRide.pickup_location}</p>
                   )}
                 </div>
-                <div className="glass-1" style={{ padding: '20px' }}>
-                  <p className="label-caps" style={{ fontSize: '10px', marginBottom: '8px' }}>Target Destination</p>
-                  <p style={{ fontSize: '14px', fontWeight: 600 }}>{activeRide.dropoff_location}</p>
+                <div className="glass-1 p-6 rounded-2xl border border-white/5">
+                  <p className="label-caps text-[10px] mb-3">Target Destination</p>
+                  <p className="text-sm font-semibold leading-relaxed">{activeRide.dropoff_location}</p>
                 </div>
               </div>
             </motion.div>
@@ -248,40 +222,40 @@ export default function ActiveRidePanel({ activeRide }) {
         </AnimatePresence>
 
         {/* Action Buttons */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div className="flex flex-col gap-4">
           {(activeRide.status === 'Accepted' || activeRide.status === 'Driver En Route') && (
-            <Button block size="lg" onClick={() => handleAction('arrive')} disabled={loading}>
+            <Button className="w-full py-5 text-lg font-bold" onClick={() => handleAction('arrive')} disabled={loading}>
               {loading ? <Spinner size={20} /> : "I'VE ARRIVED AT PICKUP"}
             </Button>
           )}
 
           {activeRide.status === 'Arrived at Pickup' && (
-            <Button block size="lg" onClick={() => handleAction('start')} disabled={loading}>
+            <Button className="w-full py-5 text-lg font-bold" onClick={() => handleAction('start')} disabled={loading}>
               {loading ? <Spinner size={20} /> : "PASSENGER IS IN — START RIDE"}
             </Button>
           )}
 
           {activeRide.status === 'In Progress' && (
-            <Button block size="lg" onClick={() => setShowConfirmModal(true)}>
+            <Button className="w-full py-5 text-lg font-bold" onClick={() => setShowConfirmModal(true)}>
               I'VE REACHED DESTINATION
             </Button>
           )}
 
           {activeRide.payment_status === 'Paid' && (
-            <Button block variant="primary" onClick={() => { clearRide(); window.location.reload(); }}>
+            <Button className="w-full py-5 text-lg font-bold" onClick={() => { clearRide(); window.location.reload(); }}>
               BACK TO DASHBOARD
             </Button>
           )}
 
           {(!['In Progress', 'Completed'].includes(activeRide.status)) && (
-            <Button variant="ghost" size="sm" onClick={() => handleAction('cancel')} disabled={loading} style={{ color: '#EF4444', marginTop: '8px' }}>
+            <Button variant="ghost" className="w-full text-red-500 font-bold mt-2" onClick={() => handleAction('cancel')} disabled={loading}>
               Cancel Ride
             </Button>
           )}
         </div>
       </GlassCard>
 
-      <div style={{ height: '350px', marginTop: '32px', borderRadius: '24px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.05)' }}>
+      <div className="h-[300px] md:h-[400px] mt-10 rounded-[32px] overflow-hidden border border-white/5">
         <RideMap 
           pickup={{ lat: Number(activeRide.pickup_lat), lng: Number(activeRide.pickup_lng) }}
           dropoff={{ lat: Number(activeRide.dropoff_lat), lng: Number(activeRide.dropoff_lng) }}

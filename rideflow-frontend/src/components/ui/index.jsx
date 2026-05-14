@@ -90,3 +90,4 @@ export function EmptyState({ icon: Icon, title, subtitle, action }) {
 }
 
 export { default as RatingStars } from './RatingStars';
+export { default as ResponsiveModal } from './ResponsiveModal';
