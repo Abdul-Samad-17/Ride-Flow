@@ -36,7 +36,7 @@ The project is built as a **Database Systems Lab semester project** with a focus
 | Service | URL |
 |---|---|
 | **Frontend** | [https://rideflow.vercel.app](https://ride--flow.vercel.app) |
-| **Backend API** | [https://rideflow-backend.onrender.com](https://rideflow-backend.onrender.com) |
+| **Backend API** | [https://rideflow-backend.onrender.com](https://ride-flow-ps1q.onrender.com) |
 
 > **Note:** The backend is hosted on Render's free tier and may take ~30 seconds to wake up after inactivity.
 
